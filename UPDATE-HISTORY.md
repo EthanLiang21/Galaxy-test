@@ -1,9 +1,4 @@
-<!-- 【版本记录】此文件记录每个版本相对上一版新增/变更的内容。新增版本时请在顶部追加一节，注明日期、版本、变更清单与验证结果。 -->
 # Update History · Galaxy test
-
-太阳系 3D 交互模拟的版本演进记录。项目为单文件 HTML（Three.js WebGL），无需构建。
-
-**[在线演示](https://ethanliang21.github.io/Galaxy-test/)** · [仓库](https://github.com/EthanLiang21/Galaxy-test)
 
 ---
 
@@ -66,16 +61,3 @@
 - **交互**：拖拽旋转 / 滚轮缩放 / 点击天体查看详情并跟随；6 组预设视角；时间流速 0.05–200 天/秒（对数滑杆）；暂停；轨道线 / 标签 / 小行星带开关；`#view=` 哈希直达视角
 - **纹理**：全部程序化 Canvas 生成（岩石+陨坑 / 气态条纹 / 地球海陆冰 / 云层 / 环带径向 UV 重写），零外部图片依赖
 - **数据面板**：每个天体附真实天文数据与中文讲解，含“四季不是由日地距离造成”等常见误区澄清
-
----
-
-## 发布记录
-
-| 日期 | 事件 |
-|---|---|
-| 2026-11-23 | WorkBuddy 分享链接上线（按用户要求已关闭） |
-| 2026-11-23 | 创建 GitHub 公开仓库 `EthanLiang21/Galaxy-test`，推送 v3 为 `index.html` + README |
-| 2026-11-23 | 推送 `gh-pages` 分支启用 GitHub Pages：`https://ethanliang21.github.io/Galaxy-test/` |
-| 2026-11-23 | 新增本版本记录文件 `UPDATE-HISTORY.md` |
-
-<!-- 【更新方式】以后每次修改功能或内容，先改本地 index.html，再在顶部追加新版本条目，最后同时推送到 main 与 gh-pages 分支；线上链接不变。 -->
