@@ -2,7 +2,7 @@
 
 单文件 HTML（Three.js WebGL）实现的太阳系交互演示，无需构建、无需 npm 安装。直接用浏览器打开 `index.html` 即可运行。
 
-**[在线演示](https://galaxy-test.app.workbuddy.host/?sharecode=AUZGJXVKMO)**
+**[在线演示（GitHub Pages）](https://ethanliang21.github.io/Galaxy-test/)**
 
 ## 功能
 
