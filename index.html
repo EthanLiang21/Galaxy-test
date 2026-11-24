@@ -366,7 +366,7 @@ canvas{display:block}
 
 <!-- 【顶栏】通栏停靠：标题 | 银河模式 | 说明 | 模拟日期 | 画质 -->
 <header id="topbar" class="glass">
-  <h1>太阳系 · 3D 交互模拟<span class="ver">V5</span></h1>
+  <h1>太阳系 · 3D 交互模拟<span class="ver">V6</span></h1>
   <span class="chip">EPOCH REAL · 日月地真实周期</span>
   <div class="tb-spacer"></div>
   <button id="mode-btn">🌌 银河模式</button>
@@ -393,6 +393,7 @@ canvas{display:block}
   <button class="vbtn" data-view="ecliptic">🌐 黄道面平视 <span class="en">ECLIPTIC</span></button>
   <button class="vbtn" data-view="sun">☀ 太阳特写 <span class="en">SOL</span></button>
   <button class="vbtn" data-view="earth">🌍 地月与卫星 <span class="en">TERRA</span></button>
+  <button class="vbtn" data-view="sats">🛰 卫星特写 <span class="en">SAT</span></button>
   <button class="vbtn" data-view="saturn">🪐 土星环特写 <span class="en">SATURN</span></button>
   <button class="vbtn" data-view="edge">🌐 系外与奥尔特云 <span class="en">DEEP</span></button>
   <button class="vbtn" id="planet-fold">🪐 行星视角 ▸ <span class="en">PLANETS</span></button>
@@ -428,6 +429,8 @@ canvas{display:block}
     <input type="range" id="speed" min="0" max="100" value="17">
   </div>
   <div class="chips">
+    <button class="chipbtn" data-spd="0.0000115741">实时</button>
+    <button class="chipbtn" data-spd="0.0006944">1分/秒</button>
     <button class="chipbtn" data-spd="0.0417">1时/秒</button>
     <button class="chipbtn" data-spd="1">1天/秒</button>
     <button class="chipbtn" data-spd="30">1月/秒</button>
@@ -446,7 +449,7 @@ canvas{display:block}
 <!-- 【比例与素材说明】点顶栏 ⓘ 显示/隐藏 -->
 <div id="foot-note" class="glass">
   <span class="microlabel">Scale & Credits · 比例与来源</span>
-  天体大小与轨道距离经非线性压缩以兼顾可视性（奥尔特云示意半径 360–560，对应真实约 2,000–100,000 AU）；日月地公转与自转均为真实周期比例；日食/月食阴影大小经视觉放大以便观察。行星贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0），离线时自动回退程序化纹理。冥王星、谷神星轨道根数为近似值。
+  <b>比例基准</b>：行星半径按立方根比例（相对大小接近真实）；轨道距离按幂律 36·a<sup>0.68</sup> 压缩；月球距离压缩至约 15 个地球半径（真实 60）；太阳半径未按比例（真实约需 65 单位）；GEO 卫星按真实 6.6 R<sub>⊕</sub>。日月地公转与自转均为真实周期；日食/月食阴影经视觉放大。奥尔特云示意半径 460–640（真实 2,000–100,000 AU）。银河模式：太阳距银心约 2.6 万光年、绕行速度约 230 km/s、周期约 2.3 亿年，尺寸为示意。行星贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0，SD/HD 分级加载），离线时自动回退程序化纹理。彗星与冥王星、谷神星轨道根数为近似值。
 </div>
 
 <!-- 【自由飞行提示】 -->
@@ -496,13 +499,24 @@ try {
 }
 
 /* ---------------- 设置持久化与画质档位 ---------------- */
-const SAVE_KEY = 'solsys-v3-settings';
+const SAVE_KEY = 'solsys-v6-settings';
 const QUALITY = {
   low:   { dpr: 1,   seg: 32, stars: 1400, belt: 600,  oort: 1200, aniso: 1, bloom: null },
   mid:   { dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, bloom: { strength: .5, radius: .5, threshold: .85 } },
   ultra: { dpr: 0,   seg: 72, stars: 5000, belt: 1800, oort: 3600, aniso: 8, bloom: { strength: .95, radius: .55, threshold: .82 } },
 };
-const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+// 迁移 v3-v5 旧设置：速度滑杆刻度已改为「实时→4000 天/秒」对数映射，换算旧速度到新刻度
+let saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+if (!saved){
+  const old = JSON.parse(localStorage.getItem('solsys-v3-settings') || 'null');
+  if (old){
+    saved = { ...old };
+    if (typeof old.speedV === 'number'){
+      const oldSpd = 0.05 * Math.pow(4000, old.speedV / 100);
+      saved.speedV = Math.max(0, Math.min(100, 100 * Math.log(oldSpd / SPD_MIN) / Math.log(SPD_MAX / SPD_MIN)));
+    }
+  } else saved = {};
+}
 const qualityKey = saved.q && QUALITY[saved.q] ? saved.q : 'mid';
 const Q = QUALITY[qualityKey];
 
@@ -524,19 +538,32 @@ const START_MS = Date.UTC(2026, 10, 23);
 const DEG = Math.PI / 180;
 const TAU = Math.PI * 2;
 const TEX_BASE  = 'https://cdn.jsdelivr.net/gh/jeromeetienne/threex.planets@master/images/';
-const MILKY_URL = 'https://cdn.eso.org/images/screen/eso0932a.jpg';   // ESO/S. Brunier, CC BY 4.0
+// 银河背景三级加载：SD（快）→ HD（ESO 大图 8MB）→ 备源（jsDelivr 4K）→ 程序化
+const MILKY_URL_SD  = 'https://cdn.eso.org/images/screen/eso0932a.jpg';  // ESO/S. Brunier, CC BY 4.0
+const MILKY_URL_HD  = 'https://cdn.eso.org/images/large/eso0932a.jpg';
+const MILKY_URL_ALT = 'https://cdn.jsdelivr.net/gh/vasturiano/three-globe@master/example/img/night-sky.png';
 
-// 比例拉开：轨道间距与地月距离都更大
-const orbitR    = aAU => 34 * Math.pow(aAU, 0.62);
-const bodyR     = rE  => 0.85 * Math.sqrt(rE);
+// 比例重校（现实依据与可读性的折中，界面 ⇢ 说明浮层有完整标注）：
+//  - 行星半径：立方根比例（真实直径比的三次方根，相对大小基本保真）
+//  - 轨道距离：幂律压缩 36·a^0.68，内行星区更舒展
+//  - 月球距离：压缩至约 15 个地球半径（真实为 60）
+//  - 太阳半径：固定 5 单位（真实比例约 65，未按比例，避免喧宾夺主）
+const orbitR    = aAU => 36 * Math.pow(aAU, 0.68);
+const bodyR     = rE  => 0.6 * Math.cbrt(rE);
 const SUN_R     = 5;
-const MOON_DIST = 5.5;
+const MOON_DIST = 9;
 const MOON_INC  = 5.145;
 // 日食/月食检测阈值（视觉放大后的阴影角度）
 const SOLAR_T = 3.0 * DEG;
 const LUNAR_T = 5.0 * DEG;
-const GAL_YEAR_DAYS = 2.25e8 * 365.25;   // 一个银河年
+const GAL_YEAR_DAYS = 2.3e8 * 365.25;     // 一个银河年（约 2.3 亿年，最新测定值）
 const GAL_MULT = 2e10;                    // 银河模式时间倍率：默认流速约 0.05 银河年/秒
+// 流速对数映射范围：最慢 1 秒/秒（实时，观察人造卫星），最快 4000 天/秒
+const SPD_MIN = 1 / 86400;
+const SPD_MAX = 4000;
+const SUN_GAL_R   = 52;                   // 太阳距银心（万分之一比例）：约 2.6 万光年 / 银盘半径约 5 万光年
+const SUN_GAL_TH0 = 3.96;                 // 初始方位角：落在猎户臂（旋臂对数螺旋上）
+const ECLIPTIC_GAL_TILT = 60.2 * DEG;     // 黄道面与银道面的真实夹角
 
 function makeRng(seed){ let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
 function makeValueNoise(seed){
@@ -896,8 +923,8 @@ const MOON_DEFS = {
 
 const GALAXY_INFO = {
   key:'galaxy', name:'太阳系在银河系', tag:'简化示意模型 · 太阳携带行星的大公转',
-  facts:{ '距银心':'约 2.6 万光年','公转速度':'约 220 km/s','周期（银河年）':'约 2.25 亿年','当前位置':'猎户臂（本地泡）','已绕行':'约 20 圈（46 亿年）','携带着':'八大行星 + 小行星带 + 奥尔特云' },
-  desc:'太阳并不是静止的——它带着整个太阳系（包括最外围的奥尔特云）以约 <b>220 km/s</b> 绕银河系中心运行，中心是超大质量黑洞<b>人马座 A*</b>。转一圈约 <b>2.25 亿年</b>，称为一个"银河年"；太阳系诞生至今只绕了约 20 圈。<br>画面为<b>极度简化示意</b>：银盘与旋臂只做形态示意，太阳系与奥尔特云的尺寸被放大约万亿倍才能在此尺度下可见（真实比例下不到 2 光年，仅为图中太阳轨道半径的千分之一以下）。' };
+  facts:{ '距银心':'约 2.6 万光年','公转速度':'约 230 km/s（平坦自转曲线）','周期（银河年）':'约 2.3 亿年','当前位置':'猎户臂（本地泡）','已绕行':'约 20 圈（46 亿年）','黄道倾角':'相对银道面约 60.2°' },
+  desc:'太阳并不是静止的——它带着整个太阳系（包括最外围的奥尔特云）以约 <b>230 km/s</b> 绕银河系中心运行，中心是约 <b>430 万倍太阳质量</b>的超大质量黑洞<b>人马座 A*</b>。因为银河系的自转曲线是<b>平坦的</b>（外围恒星速度几乎不衰减），太阳的绕行接近匀速，转一圈约 <b>2.3 亿年</b>，称为一个"银河年"；太阳系诞生至今只绕了约 20 圈。<br>画面为<b>极度简化示意</b>：银盘与旋臂只做形态示意（旋臂是密度波，恒星在其中穿行），太阳系与奥尔特云的尺寸被放大约万亿倍才能在此尺度下可见；黄道面相对银道面的真实倾角约 60.2°。' };
 
 /* ---------------- 开普勒轨道 ---------------- */
 function keplerScenePos(b, days, target){
@@ -1278,58 +1305,143 @@ solarLabelObjs.push(moonLabel);
 }
 moonOrbitGroup.add(moonMesh);
 
-/* ---------------- 人造卫星（真实周期） ---------------- */
-function panelMesh(w, h, color){
-  return new THREE.Mesh(new THREE.BoxGeometry(w, .008, h),
-    new THREE.MeshPhongMaterial({ color, shininess: 60, specular: new THREE.Color(0x555555) }));
+/* ---------------- 人造卫星（真实周期 + 精化模型） ---------------- */
+// 太阳能帆板贴图：电池片网格（帆板结构辨识度关键）
+const panelTexBlue = canvasTexture(64, 64, (ctx, w, h) => {
+  ctx.fillStyle = '#16305e'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(120,160,230,.75)'; ctx.lineWidth = 2;
+  for (let i = 1; i < 4; i++){
+    ctx.beginPath(); ctx.moveTo(i * w / 4, 0); ctx.lineTo(i * w / 4, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * h / 4); ctx.lineTo(w, i * h / 4); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(210,230,255,.5)';
+  ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
+});
+const panelTexGold = canvasTexture(64, 64, (ctx, w, h) => {
+  ctx.fillStyle = '#8a6a2e'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(240,214,150,.7)'; ctx.lineWidth = 2;
+  for (let i = 1; i < 4; i++){
+    ctx.beginPath(); ctx.moveTo(i * w / 4, 0); ctx.lineTo(i * w / 4, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * h / 4); ctx.lineTo(w, i * h / 4); ctx.stroke();
+  }
+});
+function panelMesh(w, h, tex){
+  return new THREE.Mesh(new THREE.BoxGeometry(w, .006, h),
+    new THREE.MeshPhongMaterial({ map: tex, shininess: 90, specular: new THREE.Color(0x8899bb), side: THREE.DoubleSide }));
 }
+function metalMat(color){ return new THREE.MeshPhongMaterial({ color, shininess: 55, specular: new THREE.Color(0x777777) }); }
+
+// 国际空间站：主桁架 + 4 对大型帆板 + 多舱段 + 散热板
 function buildISS(){
   const g = new THREE.Group();
-  const truss = new THREE.Mesh(new THREE.BoxGeometry(.1, .014, .014), new THREE.MeshPhongMaterial({ color: 0xcccccc }));
-  g.add(truss);
-  const p1 = panelMesh(.05, .02, 0xd8a94e); p1.position.set(-.07, .012, 0); p1.rotation.z = .5;
-  const p2 = panelMesh(.05, .02, 0xd8a94e); p2.position.set(.07, .012, 0);  p2.rotation.z = -.5;
-  const p3 = panelMesh(.035, .018, 0xd8a94e); p3.position.set(0, .05, 0);
-  g.add(p1, p2, p3);
+  // 主桁架（ Integrated Truss Structure ）
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(.17, .007, .007), metalMat(0xb8bec8)));
+  // 4 对太阳能帆板（含格状纹理）
+  [-.075, -.048, .048, .075].forEach(x => {
+    [1, -1].forEach(sgn => {
+      const p = panelMesh(.016, .032, panelTexBlue);
+      p.position.set(x, .012 * sgn, 0);
+      p.rotation.x = Math.PI / 2;
+      g.add(p);
+    });
+  });
+  // 加压舱段群（Zarya / Destiny / Node 2 / 气闸）
+  const mods = [[-.02, .028, 0xd6dce4], [.008, .034, 0xe4e8ee], [.036, .022, 0xd6dce4], [.052, .016, 0xc9ced6]];
+  mods.forEach(([z, len, c]) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, len, 10), metalMat(c));
+    m.rotation.x = Math.PI / 2; m.position.z = z;
+    g.add(m);
+  });
+  // 节点舱 + 穹顶舱
+  const node = new THREE.Mesh(new THREE.SphereGeometry(.013, 10, 10), metalMat(0xeef1f5));
+  node.position.z = -.045; g.add(node);
+  const cupola = new THREE.Mesh(new THREE.SphereGeometry(.007, 8, 8, 0, TAU, 0, Math.PI / 2.2), metalMat(0x2c3440));
+  cupola.position.set(0, -.011, -.03); g.add(cupola);
+  // 散热板（白色，垂直展开）
+  [-1, 1].forEach(sgn => {
+    const rad = new THREE.Mesh(new THREE.BoxGeometry(.004, .02, .045), metalMat(0xf2f5f8));
+    rad.position.set(.015 * sgn, .014, -.02);
+    g.add(rad);
+  });
   return g;
 }
+// 天宫：天和核心舱 + 问天/梦天实验舱（T 字构型）+ 三对帆板
 function buildCSS(){
   const g = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .06, 12), new THREE.MeshPhongMaterial({ color: 0xd8dde4 }));
-  core.rotation.x = Math.PI / 2;
-  const hub = new THREE.Mesh(new THREE.SphereGeometry(.014, 10, 10), new THREE.MeshPhongMaterial({ color: 0xe8ecf2 }));
-  hub.position.z = .03;
-  const s1 = panelMesh(.028, .014, 0xc4785a); s1.position.set(-.045, 0, 0);
-  const s2 = panelMesh(.028, .014, 0xc4785a); s2.position.set(.045, 0, 0);
-  g.add(core, hub, s1, s2);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(.011, .011, .05, 12), metalMat(0xdfe3ea));
+  core.rotation.x = Math.PI / 2; g.add(core);
+  const dock = new THREE.Mesh(new THREE.SphereGeometry(.011, 10, 10), metalMat(0xeef1f5));
+  dock.position.z = .031; g.add(dock);
+  [-1, 1].forEach(sgn => {
+    const lab = new THREE.Mesh(new THREE.CylinderGeometry(.009, .009, .03, 10), metalMat(0xd6dce4));
+    lab.rotation.z = Math.PI / 2; lab.position.x = .026 * sgn;
+    g.add(lab);
+    const w = panelMesh(.028, .012, panelTexBlue);
+    w.position.set(.052 * sgn, .008, 0);
+    g.add(w);
+    const w2 = panelMesh(.028, .012, panelTexBlue);
+    w2.position.set(.052 * sgn, -.008, 0);
+    g.add(w2);
+  });
+  [-1, 1].forEach(sgn => {
+    const w = panelMesh(.014, .026, panelTexBlue);
+    w.position.set(0, .012 * sgn, -.04);
+    g.add(w);
+  });
   return g;
 }
+// 哈勃望远镜：镜筒 + 遮光罩 + 孔径圈 + 双翼帆板 + 天线
 function buildHST(){
   const g = new THREE.Group();
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .07, 12), new THREE.MeshPhongMaterial({ color: 0xcfd6de }));
-  const ap = new THREE.Mesh(new THREE.CylinderGeometry(.0135, .0135, .012, 12), new THREE.MeshPhongMaterial({ color: 0x222831 }));
-  ap.position.y = .034;
-  const p1 = panelMesh(.024, .05, 0x3560a8); p1.position.set(-.032, 0, 0); p1.rotation.z = Math.PI / 2; p1.rotation.x = Math.PI / 2;
-  const p2 = panelMesh(.024, .05, 0x3560a8); p2.position.set(.032, 0, 0);  p2.rotation.z = Math.PI / 2; p2.rotation.x = Math.PI / 2;
-  g.add(tube, ap, p1, p2);
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .058, 14), metalMat(0xcdd4dd));
+  g.add(tube);
+  const foil = new THREE.Mesh(new THREE.CylinderGeometry(.0125, .0125, .02, 14), metalMat(0xc9a34e));
+  foil.position.y = .019; g.add(foil);
+  const ap = new THREE.Mesh(new THREE.CylinderGeometry(.013, .013, .008, 14), metalMat(0x1d232c));
+  ap.position.y = -.031; g.add(ap);
+  [-1, 1].forEach(sgn => {
+    const w = panelMesh(.022, .05, panelTexBlue);
+    w.position.set(.024 * sgn, .006, 0);
+    w.rotation.z = Math.PI / 2;
+    g.add(w);
+    const dish = new THREE.Mesh(new THREE.SphereGeometry(.008, 8, 6, 0, TAU, 0, Math.PI / 2.6),
+      new THREE.MeshPhongMaterial({ color: 0xf0f2f5, side: THREE.DoubleSide }));
+    dish.position.set(.014 * sgn, -.012, .012);
+    dish.rotation.x = 2.2;
+    g.add(dish);
+  });
   return g;
 }
+// 北斗三号 GEO 卫星：金色主体 + 双翼各 4 片帆板 + 蝶形天线 + 推进部
 function buildGEO(){
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(.022, .022, .022), new THREE.MeshPhongMaterial({ color: 0xd8b860 }));
-  const p1 = panelMesh(.075, .022, 0x3560a8); p1.position.set(-.05, 0, 0);
-  const p2 = panelMesh(.075, .022, 0x3560a8); p2.position.set(.05, 0, 0);
-  const dish = new THREE.Mesh(new THREE.SphereGeometry(.012, 10, 8, 0, TAU, 0, Math.PI / 2.4),
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.02, .02, .024), metalMat(0xc9a34e));
+  g.add(body);
+  [-1, 1].forEach(sgn => {
+    for (let k = 0; k < 4; k++){
+      const seg = panelMesh(.011, .02, panelTexBlue);
+      seg.position.set((.016 + k * .0125) * sgn, 0, 0);
+      g.add(seg);
+    }
+  });
+  const dish = new THREE.Mesh(new THREE.SphereGeometry(.011, 10, 8, 0, TAU, 0, Math.PI / 2.3),
     new THREE.MeshPhongMaterial({ color: 0xf0f2f5, side: THREE.DoubleSide }));
-  dish.rotation.x = Math.PI / 1.6;
-  g.add(body, p1, p2, dish);
+  dish.rotation.x = Math.PI / 1.7;
+  g.add(dish);
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(.0015, .0015, .02, 6), metalMat(0x9aa2ac));
+  boom.rotation.x = Math.PI / 2; boom.position.z = .02;
+  g.add(boom);
+  const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(.004, .002, .006, 8), metalMat(0x565c66));
+  nozzle.position.z = -.017;
+  g.add(nozzle);
   return g;
 }
+// 卫星轨道半径（地球半径 0.6 单位）：LEO ≈ 1.1 R⊕，GEO ≈ 6.6 R⊕（真实比值）
 const SATS = [
-  { key:'iss',     info: SAT_INFO.iss,     r: 1.0,  inc: 51.6, periodMin: 92.7, geo:false, build: buildISS },
-  { key:'css',     info: SAT_INFO.css,     r: 0.99, inc: 41.5, periodMin: 92.0, geo:false, build: buildCSS },
-  { key:'hst',     info: SAT_INFO.hst,     r: 1.03, inc: 28.5, periodMin: 95.5, geo:false, build: buildHST },
-  { key:'beidou',  info: SAT_INFO.beidou,  r: 2.2,  inc: 0,    periodMin: null, geo:true,  build: buildGEO },
+  { key:'iss',     info: SAT_INFO.iss,     r: .66,  inc: 51.6, periodMin: 92.7, geo:false, build: buildISS },
+  { key:'css',     info: SAT_INFO.css,     r: .65,  inc: 41.5, periodMin: 92.0, geo:false, build: buildCSS },
+  { key:'hst',     info: SAT_INFO.hst,     r: .68,  inc: 28.5, periodMin: 95.5, geo:false, build: buildHST },
+  { key:'beidou',  info: SAT_INFO.beidou,  r: 3.96, inc: 0,    periodMin: null, geo:true,  build: buildGEO },
 ];
 const earthObj = planets.find(p => p.body.key === 'earth');
 const satsRoot = new THREE.Group();
@@ -1353,6 +1465,127 @@ SATS.forEach((s, idx) => {
 earthObj.tilt.add(satsRoot);
 earthObj.sys.add(moonOrbitGroup);
 
+/* ---------------- 彗星系统（真实轨道根数 · J2000 近似） ----------------
+   彗核独立贴图 + 彗发辉光 + 双尾（尘埃尾/离子尾，始终背向太阳，长度随日心距伸缩） */
+const COMET_TAIL_DUST = (r, g, b) => canvasTexture(256, 32, (ctx, w, h) => {
+  for (let x = 0; x < w; x++){
+    const t = x / w;
+    const a = .62 * Math.pow(1 - t, 1.7);                       // 头亮尾暗
+    const half = (h / 2) * (.2 + .8 * Math.pow(t, .5)) * (1 - t * .35);  // 细→宽→微收
+    ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+    ctx.fillRect(x, h / 2 - half, 1, Math.max(1, half * 2));
+  }
+});
+const COMET_TAIL_ION = (r, g, b) => canvasTexture(192, 12, (ctx, w, h) => {
+  for (let x = 0; x < w; x++){
+    const t = x / w;
+    const a = .5 * Math.pow(1 - t, 2.0);
+    const half = (h / 2) * (.35 + .65 * Math.pow(t, .35)) * (1 - t * .3);
+    ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+    ctx.fillRect(x, h / 2 - half, 1, Math.max(1, half * 2));
+  }
+});
+const COMETS = [
+  { key:'halley', name:'1P/哈雷彗星', color:0x8fb8e8,
+    elems:{ L0: 177.7, peri: 111.33, node: 58.42, i: 162.26, e: .967, a: 17.834, T: 27509 },
+    qAU: .587, QAU: 35.1, nucleus:[46,42,40], craters: 26, seed: 801,
+    comaRGB:[178,205,255], dustRGB:[255,238,214], ionRGB:[132,170,255],
+    comaBase: 1.9, dustLen: 9, dustW: 1.5, ionLen: 11, ionW: .7,
+    facts:{ 近日点: '0.587 AU', 远日点: '35.1 AU', 公转周期: '约 75.3 年', 偏心率: '0.967（逆行轨道）',
+      彗核尺寸: '约 15 × 8 km', 上次回归: '1986 年 2 月（近似）', 下次回归: '2061 年年中（近似）' },
+    desc: '<b>最著名的短周期彗星</b>，也是第一颗被确认周期性回归的彗星（哈雷 1705 年计算）。轨道<b>逆行</b>（倾角 162°，与行星公转方向相反），远日点接近海王星轨道之外。猎户座流星雨与宝瓶座 η 流星雨都是它遗撒的尘埃。<span class="em">轨道根数为近似值</span>。' },
+  { key:'encke', name:'2P/恩克彗星', color:0xa8c8b8,
+    elems:{ L0: 260.6, peri: 186.55, node: 334.57, i: 11.78, e: .848, a: 2.215, T: 1206 },
+    qAU: .336, QAU: 4.09, nucleus:[74,80,90], craters: 22, seed: 802,
+    comaRGB:[200,225,255], dustRGB:[240,240,230], ionRGB:[150,190,255],
+    comaBase: 1.3, dustLen: 5.5, dustW: 1.1, ionLen: 7, ionW: .5,
+    facts:{ 近日点: '0.336 AU', 远日点: '4.09 AU', 公转周期: '约 3.3 年（最短之一）', 偏心率: '0.848',
+      彗核尺寸: '约 4.8 km', 上次回归: '2023 年 10 月（近似）', 下次回归: '2027 年年初（近似）' },
+    desc: '<b>公转周期最短的彗星之一</b>（3.3 年），已被观测回归 60 多次。也是金牛座流星雨的母体，其残骸流使 11 月夜空出现火流星。<span class="em">轨道根数为近似值</span>。' },
+  { key:'67p', name:'67P/楚留莫夫-格拉西缅科', color:0xc9c2b4,
+    elems:{ L0: 159.8, peri: 12.78, node: 58.42, i: 7.04, e: .641, a: 3.463, T: 2352 },
+    qAU: 1.243, QAU: 5.68, nucleus:[78,70,60], craters: 30, seed: 803,
+    comaRGB:[232,232,226], dustRGB:[245,242,232], ionRGB:[160,195,255],
+    comaBase: 1.5, dustLen: 6.5, dustW: 1.2, ionLen: 8, ionW: .55,
+    facts:{ 近日点: '1.243 AU', 远日点: '5.68 AU', 公转周期: '约 6.4 年', 偏心率: '0.641',
+      彗核尺寸: '约 4.3 × 4.1 km（双瓣形）', 上次回归: '2021 年 11 月（近似）', 下次回归: '2028 年（近似）' },
+    desc: '<b>罗塞塔号探测器</b>2014 年抵达并释放菲莱着陆器，首次实现彗核表面软着陆。彗核呈双瓣结构，像一只橡皮鸭——证明很多彗核由两个天体低速融合而成。<span class="em">轨道根数为近似值</span>。' },
+  { key:'swift', name:'109P/斯威夫特-塔特尔彗星', color:0xb4a8d8,
+    elems:{ L0: 133.98, peri: 152.98, node: 139.38, i: 113.45, e: .963, a: 26.09, T: 48685 },
+    qAU: .96, QAU: 51.2, nucleus:[51,48,44], craters: 24, seed: 804,
+    comaRGB:[186,178,255], dustRGB:[250,244,226], ionRGB:[140,160,255],
+    comaBase: 2.0, dustLen: 9.5, dustW: 1.5, ionLen: 12, ionW: .7,
+    facts:{ 近日点: '0.96 AU', 远日点: '51.2 AU', 公转周期: '约 133 年', 偏心率: '0.963',
+      彗核尺寸: '约 26 km（已知最大活跃彗核之一）', 上次回归: '1992 年 12 月（近似）', 下次回归: '2126 年 7 月（近似）' },
+    desc: '<b>英仙座流星雨的母体</b>——每年 8 月的流星雨就是穿过它轨道的尘埃带造成的。1862 年被独立发现，与 1992 年回归间隔正好一个周期。<span class="em">轨道根数为近似值</span>。' },
+];
+const cometRuntime = [];
+// 椭圆轨道取样点（偏近点角均匀采样，保证近日点弧线不稀疏）
+function cometOrbitPoint(cb, E, target){
+  const xv = Math.cos(E) - cb.e, yv = Math.sqrt(1 - cb.e * cb.e) * Math.sin(E);
+  const nu = Math.atan2(yv, xv);
+  const rAU = cb.a * (1 - cb.e * Math.cos(E));
+  const rS = orbitR(rAU);
+  const w = (cb.peri - cb.node) * DEG, O = cb.node * DEG, inc = cb.i * DEG;
+  const cO = Math.cos(O), sO = Math.sin(O), cv = Math.cos(w + nu), sv = Math.sin(w + nu), ci = Math.cos(inc), si = Math.sin(inc);
+  return target.set((cO * cv - sO * sv * ci) * rS, sv * si * rS, -(sO * cv + cO * sv * ci) * rS);
+}
+for (const c of COMETS){
+  const sys = new THREE.Group();
+  // 彗核：独立岩石贴图（每颗颜色/陨坑数不同）
+  const nr = .17;
+  const nucleus = new THREE.Mesh(new THREE.SphereGeometry(nr, 20, 20),
+    new THREE.MeshPhongMaterial({ map: rockyTexture(c.nucleus, [30,28,26], [150,146,140], c.craters, c.seed), shininess: 2, specular: new THREE.Color(0x090909) }));
+  sys.add(nucleus);
+  // 彗发辉光
+  const coma = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture(`rgba(${c.comaRGB[0]},${c.comaRGB[1]},${c.comaRGB[2]},.9)`, 'rgba(120,150,220,.15)'),
+    blending: THREE.AdditiveBlending, depthWrite:false, opacity:.5 }));
+  coma.scale.setScalar(c.comaBase);
+  sys.add(coma);
+  // 尘埃尾 + 离子尾：sprite center=(0,.5) 让尾从彗核出发，旋转对准背阳方向
+  const dust = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: COMET_TAIL_DUST(...c.dustRGB), blending: THREE.AdditiveBlending, depthWrite:false, opacity:.5 }));
+  dust.center.set(0, .5);
+  dust.scale.set(c.dustLen, c.dustW, 1);
+  const ion = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: COMET_TAIL_ION(...c.ionRGB), blending: THREE.AdditiveBlending, depthWrite:false, opacity:.4 }));
+  ion.center.set(0, .5);
+  ion.scale.set(c.ionLen, c.ionW, 1);
+  sys.add(dust, ion);
+  scene.add(sys);
+  // 轨道虚线
+  const pts = [], v = new THREE.Vector3();
+  for (let k = 0; k < 512; k++){
+    cometOrbitPoint(c.elems, TAU * k / 512, v);
+    pts.push(v.clone());
+  }
+  const orbit = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineDashedMaterial({ color: c.color, transparent:true, opacity:.42, dashSize:3, gapSize:2.2 }));
+  orbit.computeLineDistances();
+  orbitLines.add(orbit);
+  // 轨道标注（远日点附近）：轨道信息标签
+  const M0 = (c.elems.L0 - c.elems.peri) * DEG;
+  let tAp = (Math.PI - M0) / TAU * c.elems.T;
+  if (tAp < 0) tAp += c.elems.T;
+  cometOrbitPoint(c.elems, Math.PI, v);
+  const noteLbl = new CSS2DObject(makeLabelEl(`${c.name} 轨道 · 近日点 ${c.qAU} AU / 远日点 ${c.QAU} AU`, true));
+  noteLbl.position.copy(v).add(new THREE.Vector3(0, 2.5, 0));
+  scene.add(noteLbl);
+  solarLabelObjs.push(noteLbl);
+  // 彗核标签 + 可点击资料
+  const lbl = new CSS2DObject(makeLabelEl(c.name, true));
+  lbl.position.set(0, nr + .55, 0);
+  nucleus.add(lbl);
+  solarLabelObjs.push(lbl);
+  const info = { name: c.name, tag: '彗星 · Comet', facts: c.facts, desc: c.desc };
+  const ref = { body: info, mesh: nucleus, followObj: nucleus, labelEl: lbl.element };
+  nucleus.userData.ref = ref;
+  pickablesSolar.push(nucleus);
+  cometRuntime.push({ elems: c.elems, sys, nucleus, coma, dust, ion, comaBase: c.comaBase,
+    dustLen: c.dustLen, dustW: c.dustW, ionLen: c.ionLen, ionW: c.ionW, ref });
+}
+
 const moonRef = { body: MOON_INFO, mesh: moonMesh, followObj: moonMesh, labelEl: moonLabel.element, isMoonObj: true };
 moonMesh.userData.ref = moonRef;
 pickablesSolar.push(moonMesh);
@@ -1367,7 +1600,7 @@ const beltGroup = new THREE.Group();
   const rng = makeRng(2026), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), p = new THREE.Vector3();
   beltGroup.userData.angles = [];
   for (let k = 0; k < N; k++){
-    const r = 52 + rng() * 32;                 // 火星(44)与木星(92)轨道之间
+    const r = 64 + rng() * 30;                 // 火星(48)与木星(114)轨道之间
     const a = rng() * TAU, y = (rng() - .5) * 3;
     p.set(Math.cos(a) * r, y, Math.sin(a) * r);
     e.set(rng() * TAU, rng() * TAU, rng() * TAU); q.setFromEuler(e);
@@ -1388,7 +1621,7 @@ const oortGroup = new THREE.Group();
   const rng = makeRng(88);
   for (let k = 0; k < N; k++){
     const th = rng() * TAU, ph = Math.acos(rng() * 2 - 1);
-    const R = 360 + Math.pow(rng(), .7) * 200;   // 360–560，内密外疏
+    const R = 460 + Math.pow(rng(), .7) * 180;   // 460–640（冥王星轨道 430 之外），内密外疏
     pos[k*3] = R * Math.sin(ph) * Math.cos(th);
     pos[k*3+1] = R * Math.cos(ph);
     pos[k*3+2] = R * Math.sin(ph) * Math.sin(th);
@@ -1405,13 +1638,18 @@ const oortGroup = new THREE.Group();
 
 /* ---------------- 星空点 + 银河背景（两个场景共用纹理） ---------------- */
 const milkyTexture = milkyWayFallbackTexture();   // 先用程序化，真实贴图加载成功后替换
-texLoader.load(MILKY_URL, t => {
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.mapping = THREE.EquirectangularReflectionMapping;
-  milkyTexture.image = t.image; milkyTexture.needsUpdate = true;
+function applyMilky(srcTex){
+  milkyTexture.image = srcTex.image; milkyTexture.needsUpdate = true;
+  milkyTexture.anisotropy = Math.min(Q.aniso, maxAniso);
   if (skyMat) { skyMat.map = milkyTexture; skyMat.needsUpdate = true; }
   if (galSkyMat) { galSkyMat.map = milkyTexture; galSkyMat.needsUpdate = true; }
-}, undefined, ()=>{});
+}
+// 三级加载：SD 快速提升清晰度 → HD 大图后台替换 → 备源兜底
+texLoader.load(MILKY_URL_SD, t => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  applyMilky(t);
+  texLoader.load(MILKY_URL_HD, th => { th.colorSpace = THREE.SRGBColorSpace; applyMilky(th); }, undefined, ()=>{});
+}, undefined, () => texLoader.load(MILKY_URL_ALT, t => { t.colorSpace = THREE.SRGBColorSpace; applyMilky(t); }, undefined, ()=>{}));
 let skyMat = null, galSkyMat = null;
 
 function buildSky(targetScene, matRef){
@@ -1541,14 +1779,19 @@ let galDisc, sunCarrier, sunMiniMesh;
     blending: THREE.AdditiveBlending, depthWrite:false }));
   bhGlow.scale.setScalar(7);
   galaxyScene.add(bhGlow);
-  // 太阳与携带的迷你太阳系
+  // 太阳与携带的迷你太阳系（初始位置落在猎户臂上）
   sunCarrier = new THREE.Group();
+  sunCarrier.position.set(Math.cos(SUN_GAL_TH0) * SUN_GAL_R, 0, Math.sin(SUN_GAL_TH0) * SUN_GAL_R);
   sunMiniMesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 24), new THREE.MeshBasicMaterial({ color: 0xffe9b8 }));
   const miniGlow = new THREE.Sprite(new THREE.SpriteMaterial({
     map: glowTexture('rgba(255,244,214,1)', 'rgba(255,180,80,.4)'),
     blending: THREE.AdditiveBlending, depthWrite:false }));
   miniGlow.scale.setScalar(9);
   sunCarrier.add(sunMiniMesh, miniGlow);
+  // 黄道面相对银道面真实倾角 60.2°（行星系整体倾斜）
+  const eclTilt = new THREE.Group();
+  eclTilt.rotation.x = ECLIPTIC_GAL_TILT;
+  sunCarrier.add(eclTilt);
   const miniRings = [2.8, 4.0, 5.4, 6.9, 9.2, 11.6, 14.0, 16.0];
   const miniCols = [0x9b938c, 0xe6c47f, 0x3f78c8, 0xc1593a, 0xd8b28a, 0xe0cb96, 0x9fd6de, 0x4f7fd8];
   miniRings.forEach((r, idx) => {
@@ -1557,13 +1800,13 @@ let galDisc, sunCarrier, sunMiniMesh;
       const a = TAU * k / 72;
       cp.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
     }
-    sunCarrier.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(cp),
+    eclTilt.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(cp),
       new THREE.LineBasicMaterial({ color: miniCols[idx], transparent:true, opacity:.3 })));
     const pd = new THREE.Mesh(new THREE.SphereGeometry(idx === 4 ? .22 : .12, 10, 10),
       new THREE.MeshBasicMaterial({ color: miniCols[idx] }));
     const pa = idx * .8;
     pd.position.set(Math.cos(pa) * r, 0, Math.sin(pa) * r);
-    sunCarrier.add(pd);
+    eclTilt.add(pd);
   });
   // 迷你奥尔特云（放大约万亿倍的示意壳层）
   const ON = 700;
@@ -1578,17 +1821,31 @@ let galDisc, sunCarrier, sunMiniMesh;
   }
   const og = new THREE.BufferGeometry();
   og.setAttribute('position', new THREE.BufferAttribute(op, 3));
-  sunCarrier.add(new THREE.Points(og, new THREE.PointsMaterial({
+  eclTilt.add(new THREE.Points(og, new THREE.PointsMaterial({
     color: 0xaac4ff, size: 1.4, sizeAttenuation:false, transparent:true, opacity:.4, depthWrite:false })));
-  const sunLbl = new CSS2DObject(makeLabelEl('太阳系 · 携带八大行星与奥尔特云（示意放大）', true));
+  const sunLbl = new CSS2DObject(makeLabelEl('太阳系 · 猎户臂 · 携带八大行星与奥尔特云（示意放大）', true));
   sunLbl.position.set(0, 21, 0);
   sunCarrier.add(sunLbl);
   galaxyLabelObjs.push(sunLbl);
   sunMiniMesh.userData.ref = { body: GALAXY_INFO, followObj: sunCarrier, labelEl: sunLbl.element, isGal: true };
   galaxyPickables.push(sunMiniMesh);
   galaxyScene.add(sunCarrier);
+  // 太阳绕银心轨道参考圈（半径 2.6 万光年 · 平坦自转曲线匀速绕行）
+  const oc = [];
+  for (let k = 0; k <= 128; k++){
+    const a = TAU * k / 128;
+    oc.push(new THREE.Vector3(Math.cos(a) * SUN_GAL_R, 0, Math.sin(a) * SUN_GAL_R));
+  }
+  const sunOrbitRing = new THREE.Line(new THREE.BufferGeometry().setFromPoints(oc),
+    new THREE.LineDashedMaterial({ color: 0xffd9a0, transparent:true, opacity:.28, dashSize:4, gapSize:3 }));
+  sunOrbitRing.computeLineDistances();
+  galaxyScene.add(sunOrbitRing);
+  const orbitLbl = new CSS2DObject(makeLabelEl('太阳绕银心轨道 · 半径约 2.6 万光年 · 约 230 km/s 匀速 · 周期约 2.3 亿年', true));
+  orbitLbl.position.set(Math.cos(SUN_GAL_TH0 + 2.2) * SUN_GAL_R, 6, Math.sin(SUN_GAL_TH0 + 2.2) * SUN_GAL_R);
+  galaxyScene.add(orbitLbl);
+  galaxyLabelObjs.push(orbitLbl);
   // 银心标签
-  const cLbl = new CSS2DObject(makeLabelEl('银心 · 人马座 A*（超大质量黑洞）', true));
+  const cLbl = new CSS2DObject(makeLabelEl('银心 · 人马座 A*（约 430 万倍太阳质量）', true));
   cLbl.position.set(0, 5, 0);
   galaxyScene.add(cLbl);
   galaxyLabelObjs.push(cLbl);
@@ -1612,7 +1869,7 @@ let followObj = null;
 let prevTargetPos = new THREE.Vector3();
 let rotSlowOn = !!saved.slow;
 let flyMode = false;
-const camStateSolar = { pos: new THREE.Vector3(110, 160, 260), tgt: new THREE.Vector3() };
+const camStateSolar = { pos: new THREE.Vector3(130, 190, 300), tgt: new THREE.Vector3() };
 const camStateGalaxy = { pos: new THREE.Vector3(0, 95, 160), tgt: new THREE.Vector3() };
 
 const $ = id => document.getElementById(id);
@@ -1622,18 +1879,28 @@ function fmtDate(ms){
   const d = new Date(ms);
   return `${d.getUTCFullYear()} 年 ${d.getUTCMonth()+1} 月 ${d.getUTCDate()} 日`;
 }
-function sliderToSpeed(v){ return 0.05 * Math.pow(4000, v / 100); }
-function speedToSlider(spd){ return Math.max(0, Math.min(100, 100 * Math.log(spd / 0.05) / Math.log(4000))); }
+// 流速对数映射：最慢 1 秒/秒（实时，观察人造卫星），最快 4000 天/秒
+function sliderToSpeed(v){ return SPD_MIN * Math.pow(SPD_MAX / SPD_MIN, v / 100); }
+function speedToSlider(spd){ return Math.max(0, Math.min(100, 100 * Math.log(spd / SPD_MIN) / Math.log(SPD_MAX / SPD_MIN))); }
 function updateSpeedUI(){
   const v = +$('speed').value;
   speedDaysPerSec = sliderToSpeed(v);
-  const txt = mode === 'galaxy'
-    ? (speedDaysPerSec * GAL_MULT / GAL_YEAR_DAYS).toFixed(3) + ' 银河年/秒'
-    : (speedDaysPerSec < 1 ? speedDaysPerSec.toFixed(2) : speedDaysPerSec.toFixed(1)) + ' 天/秒';
+  let txt;
+  if (mode === 'galaxy'){
+    txt = (speedDaysPerSec * GAL_MULT / GAL_YEAR_DAYS).toFixed(3) + ' 银河年/秒';
+  } else if (speedDaysPerSec * 86400 < 90){
+    txt = (speedDaysPerSec * 86400).toFixed(1) + ' 秒/秒（实时档）';
+  } else if (speedDaysPerSec < 1){
+    txt = (speedDaysPerSec * 1440).toFixed(1) + ' 分/秒';
+  } else if (speedDaysPerSec < 400){
+    txt = speedDaysPerSec.toFixed(speedDaysPerSec < 10 ? 2 : 1) + ' 天/秒';
+  } else {
+    txt = (speedDaysPerSec / 365.25).toFixed(2) + ' 年/秒';
+  }
   $('speed-val').textContent = txt;
   $('speed').style.setProperty('--fill', v + '%');
 }
-$('speed').value = saved.speedV ?? 17;
+$('speed').value = saved.speedV ?? 50;   // 新映射下默认约 0.2 天/秒
 $('speed').addEventListener('input', updateSpeedUI);
 document.querySelectorAll('.chipbtn').forEach(b => b.addEventListener('click', () => {
   $('speed').value = speedToSlider(+b.dataset.spd);
@@ -1749,11 +2016,11 @@ renderer.domElement.addEventListener('pointerup', e => {
 
 /* ---------------- 视角预设 ---------------- */
 const PRESETS = {
-  panorama: { pos: [110, 160, 260], target: [0, 0, 0] },
-  top:      { pos: [0, 420, 0.01],  target: [0, 0, 0] },
-  ecliptic: { pos: [0, 6, 400],     target: [0, 0, 0] },
+  panorama: { pos: [130, 190, 300], target: [0, 0, 0] },
+  top:      { pos: [0, 480, 0.01],  target: [0, 0, 0] },
+  ecliptic: { pos: [0, 6, 460],     target: [0, 0, 0] },
   sun:      { pos: [0, 9, 22],      target: [0, 0, 0] },
-  edge:     { pos: [380, 260, 560], target: [0, 0, 0] },
+  edge:     { pos: [480, 320, 680], target: [0, 0, 0] },
 };
 function focusPlanet(pl, camOff){
   selectBody(pl);
@@ -1765,9 +2032,10 @@ function focusPlanet(pl, camOff){
 function applyPreset(key, keepSelect){
   document.querySelectorAll('#view-dock .vbtn').forEach(b => b.classList.toggle('active', b.dataset.view === key && !keepSelect));
   closeDrawers();   // 移动端：选择视角后收起抽屉，露出场景
-  if (key === 'earth'){ focusPlanet(earthObj, new THREE.Vector3(7, 3.2, 7)); return; }
+  if (key === 'earth'){ focusPlanet(earthObj, new THREE.Vector3(10.5, 5.2, 10.5)); return; }   // 视野覆盖月球轨道（9 单位）与 GEO
+  if (key === 'sats'){ focusPlanet(earthObj, new THREE.Vector3(2.3, 1.1, 2.3)); return; }      // 近景看清卫星模型结构
   if (key === 'saturn'){
-    focusPlanet(planets.find(p => p.body.key === 'saturn'), new THREE.Vector3(14, 7, 14)); return;
+    focusPlanet(planets.find(p => p.body.key === 'saturn'), new THREE.Vector3(11, 6, 11)); return;
   }
   if (key.startsWith('p_')){
     const pl = planets.find(p => p.body.key === key.slice(2));
@@ -1969,6 +2237,7 @@ setTimeout(() => { if (hintShown){ $('hint').style.opacity = 0; hintShown = fals
 
 const tmpV = new THREE.Vector3();
 let shaderTime = 0;   // 太阳系着色器动画时间（秒）
+const _anti = new THREE.Vector3(), _pv1 = new THREE.Vector3(), _pv2 = new THREE.Vector3();
 let eclipseShown = '';
 
 function updateSolar(dt){
@@ -2001,6 +2270,30 @@ function updateSolar(dt){
     const a = s.geo ? TAU * simDays / rotFactor() : TAU * simDays * 1440 / s.periodMin;
     s.mesh.position.set(Math.cos(a) * s.r, 0, -Math.sin(a) * s.r);
     s.mesh.rotation.y = s.geo ? -a : a * .5;
+  }
+  // 彗星：开普勒位置 + 彗发/双尾活动度（随日心距伸缩）+ 尾巴背向太阳
+  for (const c of cometRuntime){
+    keplerScenePos(c.elems, simDays, tmpV);
+    c.sys.position.copy(tmpV);
+    const rAU = Math.pow(tmpV.length() / 36, 1 / 0.68);
+    const act = Math.min(1, Math.pow(2.6 / rAU, 1.6));
+    c.coma.material.opacity = .12 + .68 * act;
+    c.coma.scale.setScalar(c.comaBase * (0.5 + 1.3 * act));
+    c.dust.material.opacity = .1 + .72 * act;
+    c.ion.material.opacity = .08 + .58 * act;
+    c.dust.scale.set(c.dustLen * (0.12 + .88 * act), c.dustW * (0.5 + .5 * act), 1);
+    c.ion.scale.set(c.ionLen * (0.1 + .9 * act), c.ionW * (0.5 + .5 * act), 1);
+    if (act > .015){
+      _anti.copy(tmpV).normalize();
+      _pv1.copy(tmpV).project(camera);
+      _pv2.copy(tmpV).addScaledVector(_anti, 8).project(camera);
+      if (_pv2.z < 1){
+        const ang = Math.atan2(_pv2.y - _pv1.y, (_pv2.x - _pv1.x) * camera.aspect);
+        c.dust.material.rotation = ang;
+        c.ion.material.rotation = ang;
+      }
+    }
+    c.nucleus.rotation.y += .02;
   }
   // 小行星带差速旋转
   if (beltGroup.visible){
@@ -2076,8 +2369,10 @@ let galYears = 0;
 function updateGalaxy(dt){
   galYears = simDays / GAL_YEAR_DAYS;
   const a = TAU * galYears;
-  sunCarrier.position.set(Math.cos(a) * 32, 0, Math.sin(a) * 32);
-  galDisc.rotation.y = galYears * .12;
+  // 物理校正：太阳距银心约 2.6 万光年（银盘半径一半），平坦自转曲线 → 角速度恒定（线性推进）
+  sunCarrier.position.set(Math.cos(a + SUN_GAL_TH0) * SUN_GAL_R, 0, Math.sin(a + SUN_GAL_TH0) * SUN_GAL_R);
+  // 旋臂为密度波结构，图案相对恒星缓慢转动（示意值 0.03）
+  galDisc.rotation.y = galYears * .03;
   sunMiniMesh.rotation.y += dt * .3;
 }
 
@@ -2125,6 +2420,10 @@ addEventListener('resize', () => {
 });
 
 /* ---------------- 启动（无加载屏，直接进入场景） ---------------- */
+/* 调试/演示钩子（不影响运行）：控制台或自动化脚本可用 */
+window.__sim = { setDays: d => { simDays = d; }, camera, cometRuntime,
+  goto: (x,y,z,t=0) => { camera.position.set(x,y,z); controls.target.set(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0); },
+  setTgt: (x,y,z) => controls.target.set(x,y,z) };
 animate();
 const hashView = location.hash.match(/view=(\w+)/);
 applyPreset(hashView ? hashView[1] : 'earth');
