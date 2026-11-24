@@ -40,53 +40,7 @@ body{
 #stage{position:fixed;inset:0}
 canvas{display:block}
 
-/* ---------- 载入层：参考站式刻度盘 ---------- */
-#loading{
-  position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:0;
-  background:#04060c;transition:opacity .8s;
-}
-#loading .dial{
-  position:relative;width:min(58vmin,340px);height:min(58vmin,340px);
-  border-radius:50%;
-  border:1px solid var(--line);
-  box-shadow:inset 0 0 0 1px rgba(244,246,248,.05);
-  display:flex;align-items:center;justify-content:center;
-}
-#loading .dial::before{
-  content:"";position:absolute;inset:11.5%;border-radius:50%;
-  border:1px solid rgba(244,246,248,.09);
-}
-#loading .dial::after{
-  content:"";position:absolute;inset:-2.5%;border-radius:50%;
-  border:1px dashed rgba(244,246,248,.14);
-  animation:spin 26s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loading .core{text-align:center}
-#loading .lbl{
-  font-size:10px;letter-spacing:.28em;color:var(--dim);
-  text-transform:uppercase;font-family:var(--sans);font-weight:500;
-}
-#loading .pct{
-  font-family:var(--mono);font-size:clamp(34px,7vmin,52px);font-weight:500;
-  color:var(--ink);letter-spacing:.06em;margin:6px 0 4px;
-  font-variant-numeric:tabular-nums;
-}
-#loading .zh{font-size:12px;color:var(--faint);letter-spacing:.4em;text-indent:.4em}
-#loading .ring{
-  position:absolute;inset:-1px;border-radius:50%;
-  background:conic-gradient(var(--accent) var(--p,0%),transparent 0);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));
-          mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));
-  transition:--p .5s;
-}
-#loading .tick{
-  position:absolute;left:50%;top:-1px;width:1.5px;height:10px;
-  background:var(--warm);transform-origin:50% calc(50vmin / 2 + 2px);
-}
-#loading.error{color:#ff9d7a;font-size:13px;max-width:460px;text-align:center;letter-spacing:.05em}
-#loading.error .dial{display:none}
+/* v5：开场加载屏已移除——程序化纹理即时呈现，NASA 贴图后台静默流式加载 */
 
 /* ---------- 通用玻璃面板 ---------- */
 .glass{
@@ -106,45 +60,77 @@ canvas{display:block}
 }
 .microlabel b{color:var(--dim);font-weight:500}
 
-/* ---------- 左上标题区 ---------- */
-#title-card{
-  position:fixed;top:20px;left:20px;z-index:10;
-  padding:14px 18px 13px;max-width:352px;
-  animation:fadeSlideIn .8s ease both;
+/* ---------- 顶栏：通栏停靠（Atlas 式） ---------- */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:10;
+  height:52px;display:flex;align-items:center;gap:16px;
+  padding:0 16px calc(0px + env(safe-area-inset-top,0px));
+  padding-top:env(safe-area-inset-top,0px);
+  border-radius:0;
+  background:linear-gradient(180deg,rgba(4,6,9,.78),rgba(4,6,9,.55));
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  box-shadow:inset 0 -1px 0 var(--line),inset 0 1px 0 rgba(255,255,255,.05);
 }
-#title-card h1{
-  font-size:19px;font-weight:700;letter-spacing:.04em;line-height:1.35;color:var(--ink);
+#topbar h1{
+  font-size:15px;font-weight:700;letter-spacing:.04em;line-height:1.3;color:var(--ink);
+  white-space:nowrap;
 }
-#title-card h1 .ver{font-family:var(--mono);font-size:11px;color:var(--faint);font-weight:400;margin-left:6px;letter-spacing:.1em}
-#title-card .sub{font-size:11px;color:var(--dim);margin-top:3px;letter-spacing:.06em}
-#title-card .chip{
-  display:inline-block;margin-top:8px;font-size:9.5px;color:var(--warm);
-  font-family:var(--mono);letter-spacing:.14em;
-  border:1px solid rgba(233,173,106,.3);border-radius:999px;padding:3px 10px;
-  text-transform:uppercase;
+#topbar h1 .ver{font-family:var(--mono);font-size:10px;color:var(--faint);font-weight:400;margin-left:6px;letter-spacing:.1em}
+#topbar .chip{
+  font-size:9px;color:var(--warm);font-family:var(--mono);letter-spacing:.14em;
+  border:1px solid rgba(233,173,106,.3);border-radius:999px;padding:2px 9px;
+  text-transform:uppercase;white-space:nowrap;flex-shrink:0;
 }
+#topbar .tb-spacer{flex:1}
+#sim-date{
+  font-family:var(--mono);font-size:14px;color:var(--ink);text-align:center;
+  font-variant-numeric:tabular-nums;letter-spacing:.04em;white-space:nowrap;
+}
+#sim-date small{font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:.2em;text-transform:uppercase;margin-left:8px}
 #mode-btn{
-  display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;
+  display:flex;align-items:center;gap:7px;
   border:1px solid rgba(124,196,255,.3);background:var(--accent-soft);color:var(--accent);
-  font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;
-  transition:all .18s;text-transform:uppercase;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;
+  transition:all .18s;text-transform:uppercase;white-space:nowrap;flex-shrink:0;
 }
 #mode-btn:hover{background:rgba(124,196,255,.2);border-color:rgba(124,196,255,.55)}
 #mode-btn.galaxy{border-color:rgba(233,173,106,.4);color:var(--warm);background:var(--warm-soft)}
+#quality{
+  width:88px;height:30px;border-radius:var(--r-sm);padding:0 8px;
+  background:rgba(244,246,248,.05);color:var(--dim);
+  border:1px solid var(--line);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer;flex-shrink:0;
+}
+#quality option{background:#0a0e15;color:var(--dim)}
+#info-toggle{
+  border:1px solid var(--line);background:rgba(244,246,248,.04);color:var(--faint);
+  font-family:var(--mono);font-size:11px;width:30px;height:30px;border-radius:50%;
+  cursor:pointer;transition:all .18s;flex-shrink:0;line-height:1;
+}
+#info-toggle:hover{color:var(--ink);border-color:var(--line-strong)}
 
-/* ---------- 右上视角按钮 ---------- */
+/* 免责说明：点 ⓘ 弹出的浮层（默认隐藏） */
+#foot-note{
+  position:fixed;right:12px;bottom:76px;z-index:14;width:340px;max-width:calc(100vw - 24px);
+  padding:12px 15px;border-radius:var(--r-lg);
+  font-size:10px;color:var(--dim);line-height:1.7;text-wrap:pretty;
+  display:none;
+}
+#foot-note.on{display:block}
+#foot-note .microlabel{display:block;margin-bottom:6px}
+
+/* ---------- 左侧视角面板：停靠，宽度固定，高度避让顶栏与底栏 ---------- */
 #view-dock{
-  position:fixed;top:20px;right:20px;z-index:10;
-  display:flex;flex-direction:column;gap:5px;padding:10px;
-  animation:fadeSlideIn .8s .1s ease both;
-  max-height:calc(100vh - 40px);overflow-y:auto;
+  position:fixed;top:64px;left:12px;z-index:10;
+  width:224px;
+  display:flex;flex-direction:column;gap:4px;padding:10px;
+  max-height:calc(100vh - 64px - 96px);overflow-y:auto;
   scrollbar-width:none;
 }
 #view-dock::-webkit-scrollbar{display:none}
 #view-dock.hidden{display:none}
 #view-dock .dock-label{
-  font-size:9.5px;color:var(--faint);letter-spacing:.24em;text-align:center;
-  padding-bottom:4px;font-family:var(--mono);text-transform:uppercase;
+  font-size:9.5px;color:var(--faint);letter-spacing:.24em;text-align:left;
+  padding:0 12px 5px;font-family:var(--mono);text-transform:uppercase;
 }
 .vbtn{
   border:1px solid transparent;background:transparent;color:var(--dim);
@@ -164,12 +150,11 @@ canvas{display:block}
 #planet-list.open{display:flex}
 .pv{padding:5px 12px;font-size:11.5px}
 
-/* ---------- 信息面板 ---------- */
+/* ---------- 右侧信息面板：停靠 ---------- */
 #info-panel{
-  position:fixed;left:20px;bottom:88px;z-index:10;
-  width:340px;max-height:calc(100vh - 250px);overflow-y:auto;
-  padding:16px 18px;animation:fadeSlideIn .8s .2s ease both;
-  transition:opacity .3s;scrollbar-width:thin;
+  position:fixed;top:64px;right:12px;z-index:10;
+  width:330px;max-height:calc(100vh - 64px - 96px);overflow-y:auto;
+  padding:16px 18px;transition:opacity .3s;scrollbar-width:thin;
 }
 #info-panel.hidden{visibility:hidden;opacity:0;pointer-events:none}
 #info-panel::-webkit-scrollbar{width:4px}
@@ -192,14 +177,14 @@ canvas{display:block}
 #info-desc b{color:var(--accent);font-weight:600}
 #info-desc .em{color:var(--warm)}
 
-/* ---------- 底部控制栏（桌面） ---------- */
+/* ---------- 底部控制栏：通栏停靠，避让两侧面板 ---------- */
 #control-bar{
-  position:fixed;left:50%;bottom:18px;z-index:10;transform:translateX(-50%);
-  display:flex;align-items:center;gap:14px;padding:12px 18px;
-  animation:fadeSlideUp .8s .3s ease both;max-width:calc(100vw - 40px);
+  position:fixed;left:12px;right:12px;bottom:12px;z-index:10;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:10px 16px;row-gap:8px;
+  max-width:none;
 }
 @keyframes fadeSlideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
-@keyframes fadeSlideUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 #play-btn{
   width:36px;height:36px;border-radius:50%;flex-shrink:0;
   border:1px solid rgba(124,196,255,.4);background:var(--accent-soft);color:var(--accent);
@@ -207,11 +192,11 @@ canvas{display:block}
 }
 #play-btn:hover{background:rgba(124,196,255,.22);transform:scale(1.06)}
 #play-btn.paused{border-color:rgba(233,173,106,.5);color:var(--warm);background:var(--warm-soft)}
-.ctrl-group{display:flex;flex-direction:column;gap:4px}
-.ctrl-group>label{font-size:9.5px;color:var(--faint);letter-spacing:.16em;font-family:var(--mono);text-transform:uppercase}
+.ctrl-group{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.ctrl-group>label{font-size:9.5px;color:var(--faint);letter-spacing:.16em;font-family:var(--mono);text-transform:uppercase;white-space:nowrap}
 .ctrl-group>label span{color:var(--dim)}
 #speed{
-  width:140px;height:3px;-webkit-appearance:none;appearance:none;border-radius:1.5px;
+  width:150px;height:3px;-webkit-appearance:none;appearance:none;border-radius:1.5px;
   background:linear-gradient(90deg,var(--accent) var(--fill,45%),rgba(244,246,248,.15) var(--fill,45%));
   outline:none;cursor:pointer;
 }
@@ -219,22 +204,14 @@ canvas{display:block}
   -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
   background:var(--accent);box-shadow:0 0 10px rgba(124,196,255,.7);cursor:pointer;
 }
-.chips{display:flex;gap:4px}
+.chips{display:flex;gap:4px;flex-shrink:0}
 .chipbtn{
   font-size:9.5px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);
   background:rgba(244,246,248,.04);color:var(--faint);cursor:pointer;
-  font-family:var(--mono);letter-spacing:.06em;transition:all .15s;
+  font-family:var(--mono);letter-spacing:.06em;transition:all .15s;white-space:nowrap;
 }
 .chipbtn:hover{color:var(--accent);border-color:rgba(124,196,255,.45);background:var(--accent-soft)}
-#quality{
-  width:92px;height:26px;border-radius:var(--r-sm);padding:0 8px;
-  background:rgba(244,246,248,.05);color:var(--dim);
-  border:1px solid var(--line);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer;
-}
-#quality option{background:#0a0e15;color:var(--dim)}
-#sim-date{font-family:var(--mono);font-size:14px;color:var(--ink);min-width:118px;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.04em}
-#sim-date small{display:block;font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:.2em;text-transform:uppercase;margin-top:2px}
-.toggles{display:flex;gap:10px;flex-wrap:wrap;max-width:236px}
+.toggles{display:flex;gap:4px 14px;flex-wrap:wrap;flex:1;min-width:180px;justify-content:flex-end}
 .tg{
   display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--dim);
   cursor:pointer;user-select:none;transition:color .15s;letter-spacing:.04em;
@@ -261,7 +238,7 @@ canvas{display:block}
 
 /* ---------- 日食/月食横幅 ---------- */
 #eclipse-banner{
-  position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:12;
+  position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:12;
   padding:8px 20px;border-radius:999px;font-size:12px;
   font-family:var(--mono);letter-spacing:.1em;
   border:1px solid rgba(233,173,106,.45);background:rgba(10,8,4,.85);color:var(--warm);
@@ -317,56 +294,58 @@ canvas{display:block}
 .mtbtn.active[data-tab="info"]{background:var(--warm-soft);color:var(--warm)}
 /* 抽屉：移动端把三大面板变成底部堆叠层 */
 @media (max-width:760px){
-  #title-card{
-    top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;max-width:none;
-    padding:10px 14px;display:flex;align-items:center;gap:10px;
-    border-radius:var(--r-sm);overflow:hidden;
+  #topbar{
+    height:auto;gap:8px;padding:8px 10px;
+    padding-top:calc(8px + env(safe-area-inset-top,0px));
+    flex-wrap:wrap;row-gap:6px;
   }
-  #title-card .t-main{flex:1;min-width:0}
-  #title-card h1{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #title-card h1 .ver{margin-left:4px}
-  #title-card .sub{display:none}
-  #title-card .chip{display:none;margin:0;font-size:8.5px;padding:2px 8px;flex-shrink:0}
-  #mode-btn{width:auto;margin:0;padding:7px 9px;font-size:9px;letter-spacing:.06em;flex-shrink:0;white-space:nowrap}
+  #topbar .tb-spacer{display:none}
+  #topbar h1{flex:1 1 100%;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  #topbar h1 .ver{margin-left:4px}
+  #topbar .chip{display:none}
+  #mode-btn{padding:6px 8px;font-size:9px;letter-spacing:.04em}
+  #info-toggle{width:28px;height:28px}
+  #sim-date{font-size:11px;margin-left:auto}
+  #sim-date small{display:none}
+  #quality{width:74px;height:28px;font-size:10px}
   /* 面板全部转为底部抽屉层，由 tab 控制显隐 */
   #info-panel,#view-dock,#control-bar{
     left:10px;right:10px;bottom:calc(var(--tab-h) + 10px);top:auto;width:auto;
-    max-height:min(46vh,420px);transform:none;animation:none;
+    max-height:min(46vh,420px);animation:none;
     padding:14px 16px;border-radius:var(--r-lg);
     display:none;
   }
   #info-panel.open,#view-dock.open,#control-bar.open{display:block}
   #view-dock.open{display:flex}
-  #info-panel{left:10px;bottom:calc(var(--tab-h) + 10px)}
   #view-dock{flex-direction:row;flex-wrap:wrap;gap:5px;overflow-y:auto}
   #view-dock .vbtn{font-size:11px;padding:7px 11px}
   #view-dock .vbtn .en{display:none}
   #view-dock .dock-label{display:none}
   #planet-list{display:flex!important;flex-direction:row;flex-wrap:wrap;border-left:none;padding-left:0;margin-left:0;gap:4px}
   #control-bar{flex-direction:column;align-items:stretch;gap:10px}
-  #control-bar .ctrl-group,#control-bar #sim-date,#control-bar .toggles,#control-bar #quality{width:100%}
+  #control-bar .ctrl-group,#control-bar .toggles{width:100%}
   #speed{width:100%}
-  #sim-date{text-align:left;min-width:0}
-  #sim-date small{display:inline;margin-left:8px}
-  .toggles{max-width:none;gap:8px}
+  .toggles{max-width:none;gap:8px;justify-content:flex-start}
   /* 抽屉打开时隐藏提示 */
   #hint{display:none}
-  #foot-note{display:none}
+  #foot-note{right:10px;width:auto;left:10px}
   /* 移动端 tab 栏显示 */
   #mobile-tabs{display:block}
   /* 桌面专用元素隐藏 */
   #view-dock:not(.open){display:none}
 }
 @media (min-width:761px){ #mobile-tabs{display:none!important} }
-
-/* ---------- 底部说明 ---------- */
-#foot-note{
-  position:fixed;right:20px;bottom:18px;z-index:9;max-width:330px;
-  font-size:10px;color:var(--faint);line-height:1.6;text-align:right;
-  text-wrap:pretty;pointer-events:none;font-family:var(--mono);letter-spacing:.02em;
+/* 中等宽度：收窄两侧面板、隐藏次要文字，保证中央场景视野 */
+@media (min-width:761px) and (max-width:1080px){
+  #view-dock{width:192px}
+  #info-panel{width:284px}
+  #topbar .chip{display:none}
+  #sim-date small{display:none}
+  #topbar h1{font-size:13.5px}
 }
+
 #hint{
-  position:fixed;left:50%;top:112px;transform:translateX(-50%);z-index:9;
+  position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:9;
   font-size:11px;color:var(--faint);letter-spacing:.08em;pointer-events:none;
   transition:opacity 1s;text-shadow:0 0 8px rgba(0,0,0,.9);text-align:center;font-family:var(--mono);
 }
@@ -382,27 +361,22 @@ canvas{display:block}
 </head>
 <body>
 
-<div id="loading">
-  <div class="dial">
-    <div class="ring" id="load-ring"></div>
-    <div class="core">
-      <div class="lbl">SYSTEM INIT</div>
-      <div class="pct" id="load-pct">000%</div>
-      <div class="zh">系统初始化</div>
-    </div>
-  </div>
-</div>
 <div id="stage"></div>
 <div id="labels-root"></div>
 
-<!-- 【标题区】主标题与副标题可修改；移动端压缩为一行 -->
-<header id="title-card" class="glass">
-  <div class="t-main">
-    <h1>太阳系 · 3D 交互模拟<span class="ver">V4</span></h1>
-    <div class="sub">真实时间比例 · 日月食阴影 · 银河系模式 · 自由飞行</div>
-    <span class="chip">EPOCH REAL · 日月地为真实周期</span>
-  </div>
+<!-- 【顶栏】通栏停靠：标题 | 银河模式 | 说明 | 模拟日期 | 画质 -->
+<header id="topbar" class="glass">
+  <h1>太阳系 · 3D 交互模拟<span class="ver">V5</span></h1>
+  <span class="chip">EPOCH REAL · 日月地真实周期</span>
+  <div class="tb-spacer"></div>
   <button id="mode-btn">🌌 银河模式</button>
+  <button id="info-toggle" title="比例与素材说明">ⓘ</button>
+  <div id="sim-date">—<small>模拟日期</small></div>
+  <select id="quality" title="画质档位">
+    <option value="low">流畅</option>
+    <option value="mid" selected>高清</option>
+    <option value="ultra">极致</option>
+  </select>
 </header>
 
 <!-- 【操作提示】几秒后自动消失 -->
@@ -446,28 +420,19 @@ canvas{display:block}
   <div id="info-desc"></div>
 </aside>
 
-<!-- 【控制栏】 -->
+<!-- 【控制栏】通栏停靠于底部：播放 / 时间流速 / 快捷档 / 显示开关 -->
 <footer id="control-bar" class="glass">
   <button id="play-btn" title="暂停 / 播放（P）">⏸</button>
   <div class="ctrl-group">
     <label>时间流速 · <span id="speed-val">0.20 天/秒</span></label>
     <input type="range" id="speed" min="0" max="100" value="17">
-    <div class="chips">
-      <button class="chipbtn" data-spd="0.0417">1时/秒</button>
-      <button class="chipbtn" data-spd="1">1天/秒</button>
-      <button class="chipbtn" data-spd="30">1月/秒</button>
-      <button class="chipbtn" data-spd="365">1年/秒</button>
-    </div>
   </div>
-  <div class="ctrl-group">
-    <label>画质档位</label>
-    <select id="quality">
-      <option value="low">流畅</option>
-      <option value="mid" selected>高清</option>
-      <option value="ultra">极致</option>
-    </select>
+  <div class="chips">
+    <button class="chipbtn" data-spd="0.0417">1时/秒</button>
+    <button class="chipbtn" data-spd="1">1天/秒</button>
+    <button class="chipbtn" data-spd="30">1月/秒</button>
+    <button class="chipbtn" data-spd="365">1年/秒</button>
   </div>
-  <div id="sim-date">—<small>模拟日期</small></div>
   <div class="toggles">
     <label class="tg"><input type="checkbox" id="tg-orbits" checked><span class="box">✓</span>轨道线</label>
     <label class="tg"><input type="checkbox" id="tg-labels" checked><span class="box">✓</span>标签</label>
@@ -478,8 +443,9 @@ canvas{display:block}
   </div>
 </footer>
 
-<!-- 【免责说明】 -->
-<div id="foot-note">
+<!-- 【比例与素材说明】点顶栏 ⓘ 显示/隐藏 -->
+<div id="foot-note" class="glass">
+  <span class="microlabel">Scale & Credits · 比例与来源</span>
   天体大小与轨道距离经非线性压缩以兼顾可视性（奥尔特云示意半径 360–560，对应真实约 2,000–100,000 AU）；日月地公转与自转均为真实周期比例；日食/月食阴影大小经视觉放大以便观察。行星贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0），离线时自动回退程序化纹理。冥王星、谷神星轨道根数为近似值。
 </div>
 
@@ -506,7 +472,13 @@ canvas{display:block}
  *       WASD 自由飞行 + 移动端摇杆、行星视角折叠面板、比例拉开
  * ================================================================ */
 
-const loadingEl = document.getElementById('loading');
+// v5：无开场加载屏；引擎加载失败时才生成一个极简错误提示
+function fatalEngineError(msg){
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:#04060c;color:#ff9d7a;font:13px/1.7 "Noto Sans SC",sans-serif;padding:20px;text-align:center;';
+  el.textContent = msg;
+  document.body.appendChild(el);
+}
 let THREE, OrbitControls, CSS2DRenderer, CSS2DObject,
     EffectComposer, RenderPass, UnrealBloomPass, OutputPass;
 
@@ -519,8 +491,7 @@ try {
   ({ UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js'));
   ({ OutputPass } = await import('three/addons/postprocessing/OutputPass.js'));
 } catch (e) {
-  loadingEl.classList.add('error');
-  loadingEl.innerHTML = '三维引擎加载失败：请检查网络连接（Three.js 经 CDN 加载），刷新页面重试。';
+  fatalEngineError('三维引擎加载失败：请检查网络连接（Three.js 经 CDN 加载），刷新页面重试。');
   throw e;
 }
 
@@ -528,7 +499,7 @@ try {
 const SAVE_KEY = 'solsys-v3-settings';
 const QUALITY = {
   low:   { dpr: 1,   seg: 32, stars: 1400, belt: 600,  oort: 1200, aniso: 1, bloom: null },
-  mid:   { dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, bloom: null },
+  mid:   { dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, bloom: { strength: .5, radius: .5, threshold: .85 } },
   ultra: { dpr: 0,   seg: 72, stars: 5000, belt: 1800, oort: 3600, aniso: 8, bloom: { strength: .95, radius: .55, threshold: .82 } },
 };
 const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
@@ -626,16 +597,8 @@ galaxyScene.add(galLight);
 const texLoader = new THREE.TextureLoader();
 texLoader.crossOrigin = 'anonymous';
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
-// 加载进度：贴图计数驱动刻度盘（真实加载数约 17：12 张主贴图 + 4 张辅助 + 1 银河）
-const TEX_TOTAL = 17; let TEX_LOADED = 0;
-function texTick(){
-  TEX_LOADED++;
-  const p = Math.min(100, Math.round(TEX_LOADED / TEX_TOTAL * 100));
-  const pct = document.getElementById('load-pct'), ring = document.getElementById('load-ring');
-  if (pct) pct.textContent = String(p).padStart(3, '0') + '%';
-  if (ring) ring.style.setProperty('--p', p + '%');
-}
-setTimeout(() => { const p = document.getElementById('load-pct'); if (p) p.textContent = '025%'; const r = document.getElementById('load-ring'); if (r) r.style.setProperty('--p', '25%'); }, 60);
+// v5：贴图后台静默流式加载，无需进度计数
+function texTick(){ /* no-op：加载屏已移除 */ }
 function loadTexInto(mat, url, { colorSpace = true, apply } = {}){
   texLoader.load(url, t => {
     if (colorSpace) t.colorSpace = THREE.SRGBColorSpace;
@@ -957,21 +920,123 @@ function moonLocalPos(days, out){
   return out.set(Math.cos(ma) * MOON_DIST, Math.sin(ma) * MOON_DIST * si, -Math.sin(ma) * MOON_DIST * ci);
 }
 
-/* ---------------- 太阳 ---------------- */
+/* ---------------- 太阳：着色器建模（学习 Solar Atlas 手法） ----------------
+   表面：真实 sunmap 贴图 + 双层 fbm 米粒组织动画 + 临边昏暗；驱动 Bloom 发光
+   色球层：菲涅尔边缘 + 针状体扰动；日冕：外层散射壳 */
+const GLSL_NOISE3 = `
+float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453123); }
+float vnoise3(vec3 p){
+  vec3 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash3(i), b = hash3(i + vec3(1,0,0)), c = hash3(i + vec3(0,1,0)), d = hash3(i + vec3(1,1,0));
+  float e = hash3(i + vec3(0,0,1)), g = hash3(i + vec3(1,0,1)), h = hash3(i + vec3(0,1,1)), k = hash3(i + vec3(1,1,1));
+  return mix(mix(mix(a,b,f.x), mix(c,d,f.x), f.y), mix(mix(e,g,f.x), mix(h,k,f.x), f.y), f.z);
+}
+float fbm3(vec3 p){
+  float s = 0.0, amp = 0.5;
+  for (int o = 0; o < 5; o++){ s += amp * vnoise3(p); amp *= 0.5; p *= 2.13; }
+  return s;
+}`;
+const SUN_VERT = `
+varying vec2 vUv; varying vec3 vN; varying vec3 vPosW;
+void main(){
+  vUv = uv;
+  vN = normalize(mat3(modelMatrix) * normal);
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vPosW = wp.xyz;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+const sunUniforms = {
+  uTime: { value: 0 },
+  uMap:  { value: sunFallbackTexture() },
+};
 const sunGroup = new THREE.Group();
 const sunMesh = new THREE.Mesh(
   new THREE.SphereGeometry(SUN_R, Q.seg, Q.seg),
-  new THREE.MeshBasicMaterial({ map: sunFallbackTexture() })
+  new THREE.ShaderMaterial({
+    uniforms: sunUniforms,
+    vertexShader: SUN_VERT,
+    fragmentShader: `
+      uniform float uTime; uniform sampler2D uMap;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vPosW;
+      ${GLSL_NOISE3}
+      void main(){
+        vec3 base = texture2D(uMap, vUv).rgb;
+        // 米粒组织：两层不同速率流动的 fbm（粗颗粒 + 细颗粒）
+        float g1 = fbm3(vPosW * 1.5 + vec3(uTime * .05, 0.0, uTime * .03));
+        float g2 = fbm3(vPosW * 4.2 - vec3(0.0, uTime * .09, uTime * .06));
+        float gran = g1 * .62 + g2 * .38;
+        vec3 col = base * (0.70 + 0.58 * gran);
+        // 光斑亮区
+        col += vec3(1.0, .78, .42) * smoothstep(.72, .95, g2) * .38;
+        // 临边昏暗（真实太阳边缘更暗更红）
+        vec3 V = normalize(cameraPosition - vPosW);
+        float mu = clamp(dot(normalize(vN), V), 0.0, 1.0);
+        col *= 0.42 + 0.58 * pow(mu, .62);
+        gl_FragColor = vec4(col * 1.5, 1.0);
+      }`
+  })
 );
-loadTexInto(sunMesh.material, TEX_BASE + 'sunmap.jpg');
+texLoader.load(TEX_BASE + 'sunmap.jpg', t => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = Math.min(Q.aniso, maxAniso);
+  sunUniforms.uMap.value = t;
+}, undefined, ()=>{});
 sunGroup.add(sunMesh);
+// 色球层：菲涅尔边缘光 + 针状体（spicules）噪声扰动
+const chromoUniforms = { uTime: { value: 0 } };
+const chromoMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(SUN_R * 1.035, Q.seg, Q.seg),
+  new THREE.ShaderMaterial({
+    uniforms: chromoUniforms,
+    transparent:true, blending: THREE.AdditiveBlending, depthWrite:false,
+    vertexShader: SUN_VERT,
+    fragmentShader: `
+      uniform float uTime;
+      varying vec3 vN; varying vec3 vPosW;
+      ${GLSL_NOISE3}
+      void main(){
+        vec3 N = normalize(vN);
+        vec3 V = normalize(cameraPosition - vPosW);
+        float rim = pow(1.0 - abs(dot(N, V)), 2.6);
+        // 针状体：细密径向扰动，让边缘不是一条光滑的光
+        float spic = fbm3(normalize(vPosW) * 9.0 + vec3(0.0, uTime * .22, 0.0));
+        vec3 col = vec3(1.0, .40, .10) * rim * (0.8 + 0.6 * spic);
+        gl_FragColor = vec4(col * 1.25, rim);
+      }`
+  })
+);
+sunGroup.add(chromoMesh);
+// 日冕：外层散射壳（内亮外暗、微噪声）
+const coronaUniforms = { uTime: { value: 0 } };
+const coronaMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(SUN_R * 1.42, 48, 48),
+  new THREE.ShaderMaterial({
+    uniforms: coronaUniforms,
+    transparent:true, blending: THREE.AdditiveBlending, depthWrite:false, side: THREE.BackSide,
+    vertexShader: SUN_VERT,
+    fragmentShader: `
+      uniform float uTime;
+      varying vec3 vN; varying vec3 vPosW;
+      ${GLSL_NOISE3}
+      void main(){
+        vec3 N = normalize(vN);
+        vec3 V = normalize(cameraPosition - vPosW);
+        float rim = pow(1.0 - abs(dot(N, V)), 3.0);
+        float flow = fbm3(normalize(vPosW) * 3.5 + vec3(uTime * .03));
+        vec3 col = mix(vec3(1.0, .55, .22), vec3(1.0, .88, .66), rim) * rim * (0.75 + 0.35 * flow);
+        gl_FragColor = vec4(col * 0.9, rim * 0.85);
+      }`
+  })
+);
+sunGroup.add(coronaMesh);
 const glow1 = new THREE.Sprite(new THREE.SpriteMaterial({
   map: glowTexture('rgba(255,244,214,1)', 'rgba(255,180,80,.55)'),
-  blending: THREE.AdditiveBlending, depthWrite:false, opacity:.85 }));
+  blending: THREE.AdditiveBlending, depthWrite:false, opacity:.6 }));
 glow1.scale.setScalar(SUN_R * 5.2);
 const glow2 = new THREE.Sprite(new THREE.SpriteMaterial({
   map: glowTexture('rgba(255,220,150,.7)', 'rgba(255,140,50,.25)'),
-  blending: THREE.AdditiveBlending, depthWrite:false, opacity:.4 }));
+  blending: THREE.AdditiveBlending, depthWrite:false, opacity:.28 }));
 glow2.scale.setScalar(SUN_R * 10);
 sunGroup.add(glow1, glow2);
 scene.add(sunGroup);
@@ -1006,6 +1071,7 @@ const planets = [];
 const orbitLines = new THREE.Group();
 const moonOrbitLines = [];
 const pickablesSolar = [];
+let saturnRingU = null, saturnRingMesh = null;   // 土星环着色器引用（每帧更新阴影位置）
 scene.add(orbitLines);
 
 for (const b of BODIES){
@@ -1030,11 +1096,11 @@ for (const b of BODIES){
       cloudMesh.material.map = t;
       texLoader.load(TEX_BASE + 'earthcloudmaptrans.jpg', ta => { cloudMesh.material.alphaMap = ta; cloudMesh.material.needsUpdate = true; }, undefined, ()=>{});
     }});
-    const atmoMesh = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.16, Q.seg, Q.seg),
+    const atmoMesh = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.10, Q.seg, Q.seg),
       new THREE.ShaderMaterial({
         side: THREE.BackSide, transparent:true, blending: THREE.AdditiveBlending, depthWrite:false,
         vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-        fragmentShader: `varying vec3 vN; void main(){ float f = pow(0.72 - dot(vN, vec3(0.,0.,1.)), 3.2); gl_FragColor = vec4(0.35, 0.62, 1.0, 1.0) * f * 1.4; }`
+        fragmentShader: `varying vec3 vN; void main(){ float f = pow(max(0.0, 0.72 - dot(vN, vec3(0.,0.,1.))), 4.2); gl_FragColor = vec4(0.35, 0.62, 1.0, 1.0) * f * 0.62; }`
       }));
     tilt.add(atmoMesh);
   } else {
@@ -1045,6 +1111,27 @@ for (const b of BODIES){
   }
   tilt.add(mesh);
 
+  // 大气边缘光壳（学习 Atlas 菲涅尔手法）：金星浓密黄 / 火星稀薄尘 / 气态行星各具色调
+  const ATMO = {
+    venus:   [1.0, .86, .58, 3.0, 1.05],
+    mars:    [0.92, .52, .34, 3.6, .55],
+    jupiter: [0.75, .64, .50, 3.4, .55],
+    saturn:  [0.88, .78, .58, 3.4, .55],
+    uranus:  [0.55, .88, .92, 3.2, .6],
+    neptune: [0.40, .60, 1.0, 3.2, .65],
+  };
+  if (ATMO[b.key]){
+    const [ar, ag, ab, apow, aint] = ATMO[b.key];
+    tilt.add(new THREE.Mesh(new THREE.SphereGeometry(radius * 1.09, 48, 48),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide, transparent:true, blending: THREE.AdditiveBlending, depthWrite:false,
+        uniforms:{ uColor:{ value:new THREE.Vector3(ar, ag, ab) }, uPow:{ value:apow }, uInt:{ value:aint } },
+        vertexShader: `varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+        fragmentShader: `uniform vec3 uColor; uniform float uPow; uniform float uInt; varying vec3 vN;
+          void main(){ float f = pow(max(0.0, 0.72 - dot(vN, vec3(0.,0.,1.))), uPow); gl_FragColor = vec4(uColor * f * uInt, 1.0); }`
+      })));
+  }
+
   if (b.key === 'saturn'){
     const inner = radius * 1.24, outer = radius * 2.27;
     const g = new THREE.RingGeometry(inner, outer, 160, 1);
@@ -1053,15 +1140,52 @@ for (const b of BODIES){
       const d = Math.hypot(pos.getX(k), pos.getY(k));
       uv.setXY(k, (d - inner) / (outer - inner), .5);
     }
-    const ringMat = new THREE.MeshBasicMaterial({
-      map: detailedRingTexture(), transparent:true, side: THREE.DoubleSide, depthWrite:false, opacity:.96 });
-    loadTexInto(ringMat, TEX_BASE + 'saturnringcolor.jpg', { apply: t => {
-      ringMat.map = t;
-      texLoader.load(TEX_BASE + 'saturnringpattern.gif', ta => { ringMat.alphaMap = ta; ringMat.needsUpdate = true; }, undefined, ()=>{});
-    }});
+    // 土星环着色器（学习 Atlas）：径向贴图 + 行星投在环上的真实阴影
+    const white1x = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+    white1x.needsUpdate = true;
+    saturnRingU = {
+      uMap:       { value: detailedRingTexture() },
+      uAlpha:     { value: white1x },
+      uSunPos:    { value: new THREE.Vector3(0, 0, 0) },   // 太阳始终在原点
+      uPlanetPos: { value: new THREE.Vector3() },
+      uPlanetR:   { value: radius },
+    };
+    const ringMat = new THREE.ShaderMaterial({
+      uniforms: saturnRingU,
+      transparent:true, side: THREE.DoubleSide, depthWrite:false,
+      vertexShader: `varying vec2 vUv; varying vec3 vPosW;
+        void main(){ vUv = uv; vec4 wp = modelMatrix * vec4(position, 1.0); vPosW = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+      fragmentShader: `
+        uniform sampler2D uMap; uniform sampler2D uAlpha;
+        uniform vec3 uSunPos; uniform vec3 uPlanetPos; uniform float uPlanetR;
+        varying vec2 vUv; varying vec3 vPosW;
+        void main(){
+          vec3 base = texture2D(uMap, vec2(vUv.x, .5)).rgb;
+          float alpha = texture2D(uAlpha, vec2(vUv.x, .5)).g;
+          // 行星投影：环上点向太阳方向投影，落在行星圆柱内则变暗（软边缘）
+          vec3 L = normalize(uSunPos - uPlanetPos);
+          vec3 rel = vPosW - uPlanetPos;
+          float t = dot(rel, L);
+          float shadow = 1.0;
+          if (t < 0.0){
+            float d = length(rel - t * L);
+            shadow = mix(0.16, 1.0, smoothstep(uPlanetR * .88, uPlanetR * 1.04, d));
+          }
+          // 受光面微差：环平面朝光面略亮
+          float lit = 0.82 + 0.18 * abs(normalize(uSunPos - vPosW).y);
+          gl_FragColor = vec4(base * shadow * lit, alpha * .96);
+        }`
+    });
     const ring = new THREE.Mesh(g, ringMat);
     ring.rotation.x = -Math.PI / 2;
     tilt.add(ring);
+    saturnRingMesh = ring;
+    // 真实贴图：色彩 + 透明纹理（gif 灰度通道作 alpha）
+    texLoader.load(TEX_BASE + 'saturnringcolor.jpg', t => {
+      t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(Q.aniso, maxAniso);
+      saturnRingU.uMap.value = t;
+    }, undefined, ()=>{});
+    texLoader.load(TEX_BASE + 'saturnringpattern.gif', t => { saturnRingU.uAlpha.value = t; }, undefined, ()=>{});
   }
   if (b.key === 'uranus'){
     const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 1.6, radius * 1.72, 96),
@@ -1580,11 +1704,14 @@ function showInfo(data, labelEl){
     `<div class="data-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
   $('info-desc').innerHTML = data.desc;
   infoPanel.classList.remove('hidden');
+  $('foot-note').classList.remove('on');   // 说明浮层与信息面板互斥，避免叠压
   document.querySelectorAll('.p-label').forEach(el => el.classList.remove('sel'));
   selectedLabelEl = labelEl || null;
   if (selectedLabelEl) selectedLabelEl.classList.add('sel');
 }
 $('info-close').addEventListener('click', deselect);
+// 顶栏 ⓘ：比例与素材说明浮层开关
+$('info-toggle').addEventListener('click', () => $('foot-note').classList.toggle('on'));
 let selectedLabelEl = null;
 function deselect(){
   followObj = null; selectedLabelEl = null;
@@ -1841,9 +1968,19 @@ let hintShown = true;
 setTimeout(() => { if (hintShown){ $('hint').style.opacity = 0; hintShown = false; } }, 7000);
 
 const tmpV = new THREE.Vector3();
+let shaderTime = 0;   // 太阳系着色器动画时间（秒）
 let eclipseShown = '';
 
 function updateSolar(dt){
+  // 太阳着色器时间（米粒组织流动 / 针状体 / 日冕）
+  shaderTime += dt;
+  sunUniforms.uTime.value = shaderTime;
+  chromoUniforms.uTime.value = shaderTime;
+  coronaUniforms.uTime.value = shaderTime;
+  // 土星环阴影：更新行星世界坐标（太阳固定在原点）
+  if (saturnRingMesh){
+    saturnRingMesh.getWorldPosition(saturnRingU.uPlanetPos.value);
+  }
   for (const p of planets){
     keplerScenePos(p.body, simDays, tmpV);
     p.sys.position.copy(tmpV);
@@ -1987,9 +2124,7 @@ addEventListener('resize', () => {
   if (composer) composer.setSize(innerWidth, innerHeight);
 });
 
-/* ---------------- 启动 ---------------- */
-loadingEl.style.opacity = 0;
-setTimeout(() => loadingEl.remove(), 700);
+/* ---------------- 启动（无加载屏，直接进入场景） ---------------- */
 animate();
 const hashView = location.hash.match(/view=(\w+)/);
 applyPreset(hashView ? hashView[1] : 'earth');
