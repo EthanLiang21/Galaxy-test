@@ -1,6 +1,6 @@
-# Galaxy test — 太阳系 3D 交互模拟（FINAL）
+# Galaxy test — 太阳系 3D 交互模拟 V6
 
-单文件 HTML（Three.js WebGL）实现的太阳系交互演示，无需构建、无需 npm 安装。直接用浏览器打开 `index.html` 即可运行。本版为 v4 / v5 / v6 合并后的唯一正式版。
+单文件 HTML（Three.js WebGL）实现的太阳系交互演示，无需构建、无需 npm 安装。直接用浏览器打开 `index.html` 即可运行。本地只保留 V6 一份文件（v4 / v5 / v6 的更新内容合并记录）。
 
 **[在线演示（GitHub Pages）](https://ethanliang21.github.io/Galaxy-test/)** · **[版本记录](UPDATE-HISTORY.md)**
 
