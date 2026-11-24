@@ -8,249 +8,367 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
+/* ============ 设计系统 v4 · 参考 Solar Atlas ============
+   三级灰度文字 + 双强调色（科技蓝主 / 琥珀时间）+ 渐变深玻璃
+   等宽数字 IBM Plex Mono + 全大写微标签 letter-spacing */
 :root{
-  --bg:#04060c;
-  --panel:rgba(10,16,30,.74);
-  --panel-border:rgba(110,170,255,.16);
-  --accent:#5ecbff;
-  --accent-warm:#ffb45e;
-  --text:#e9effc;
-  --text-dim:#8fa3c6;
-  --mono:'SFMono-Regular',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --ink:#f4f6f8;
+  --dim:rgba(244,246,248,.66);
+  --faint:rgba(244,246,248,.38);
+  --line:rgba(244,246,248,.14);
+  --line-strong:rgba(244,246,248,.26);
+  --accent:#7cc4ff;
+  --accent-soft:rgba(124,196,255,.12);
+  --warm:#e9ad6a;
+  --warm-soft:rgba(233,173,106,.14);
+  --panel:linear-gradient(180deg,rgba(4,6,9,.66),rgba(4,6,9,.42));
+  --panel-solid:rgba(6,9,14,.86);
+  --mono:'IBM Plex Mono','SFMono-Regular',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --sans:'Noto Sans SC','Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  --r-lg:16px; --r-sm:10px;
+  --gutter:20px;
+  --tab-h:calc(58px + env(safe-area-inset-bottom,0px));
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
 body{
-  background:var(--bg);color:var(--text);
-  font-family:'Noto Sans SC',-apple-system,'Microsoft YaHei',sans-serif;
-  font-size:14px;line-height:1.6;
-  touch-action:none;
+  background:#04060c;color:var(--ink);
+  font-family:var(--sans);font-size:13.5px;line-height:1.65;
+  touch-action:none;-webkit-font-smoothing:antialiased;
 }
+::selection{background:var(--accent-soft)}
 #stage{position:fixed;inset:0}
 canvas{display:block}
 
-/* ---------- 载入层 ---------- */
+/* ---------- 载入层：参考站式刻度盘 ---------- */
 #loading{
   position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:14px;
-  background:var(--bg);transition:opacity .6s;font-size:15px;color:var(--text-dim);
+  align-items:center;justify-content:center;gap:0;
+  background:#04060c;transition:opacity .8s;
 }
-#loading .ring{
-  width:44px;height:44px;border-radius:50%;
-  border:2px solid rgba(110,170,255,.15);border-top-color:var(--accent);
-  animation:spin 1s linear infinite;
+#loading .dial{
+  position:relative;width:min(58vmin,340px);height:min(58vmin,340px);
+  border-radius:50%;
+  border:1px solid var(--line);
+  box-shadow:inset 0 0 0 1px rgba(244,246,248,.05);
+  display:flex;align-items:center;justify-content:center;
+}
+#loading .dial::before{
+  content:"";position:absolute;inset:11.5%;border-radius:50%;
+  border:1px solid rgba(244,246,248,.09);
+}
+#loading .dial::after{
+  content:"";position:absolute;inset:-2.5%;border-radius:50%;
+  border:1px dashed rgba(244,246,248,.14);
+  animation:spin 26s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-#loading.error{color:#ff8f8f;font-size:14px;max-width:460px;text-align:center}
+#loading .core{text-align:center}
+#loading .lbl{
+  font-size:10px;letter-spacing:.28em;color:var(--dim);
+  text-transform:uppercase;font-family:var(--sans);font-weight:500;
+}
+#loading .pct{
+  font-family:var(--mono);font-size:clamp(34px,7vmin,52px);font-weight:500;
+  color:var(--ink);letter-spacing:.06em;margin:6px 0 4px;
+  font-variant-numeric:tabular-nums;
+}
+#loading .zh{font-size:12px;color:var(--faint);letter-spacing:.4em;text-indent:.4em}
+#loading .ring{
+  position:absolute;inset:-1px;border-radius:50%;
+  background:conic-gradient(var(--accent) var(--p,0%),transparent 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));
+          mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));
+  transition:--p .5s;
+}
+#loading .tick{
+  position:absolute;left:50%;top:-1px;width:1.5px;height:10px;
+  background:var(--warm);transform-origin:50% calc(50vmin / 2 + 2px);
+}
+#loading.error{color:#ff9d7a;font-size:13px;max-width:460px;text-align:center;letter-spacing:.05em}
+#loading.error .dial{display:none}
 
 /* ---------- 通用玻璃面板 ---------- */
 .glass{
   background:var(--panel);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid var(--panel-border);
-  border-radius:14px;
-  box-shadow:0 8px 32px rgba(0,0,0,.45);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-radius:var(--r-lg);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 12px 40px rgba(0,0,0,.5);
 }
+
+/* ---------- 微标签 ---------- */
+.microlabel{
+  font-size:9.5px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--faint);font-family:var(--mono);
+}
+.microlabel b{color:var(--dim);font-weight:500}
 
 /* ---------- 左上标题区 ---------- */
 #title-card{
   position:fixed;top:20px;left:20px;z-index:10;
-  padding:16px 20px 14px;max-width:350px;
+  padding:14px 18px 13px;max-width:352px;
   animation:fadeSlideIn .8s ease both;
 }
 #title-card h1{
-  font-size:21px;font-weight:900;letter-spacing:.5px;line-height:1.3;
-  background:linear-gradient(100deg,#cfe6ff 10%,var(--accent) 60%,#9ad9ff);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
+  font-size:19px;font-weight:700;letter-spacing:.04em;line-height:1.35;color:var(--ink);
 }
-#title-card .sub{font-size:12px;color:var(--text-dim);margin-top:4px;letter-spacing:.3px}
+#title-card h1 .ver{font-family:var(--mono);font-size:11px;color:var(--faint);font-weight:400;margin-left:6px;letter-spacing:.1em}
+#title-card .sub{font-size:11px;color:var(--dim);margin-top:3px;letter-spacing:.06em}
 #title-card .chip{
-  display:inline-block;margin-top:9px;font-size:11px;color:var(--accent-warm);
-  border:1px solid rgba(255,180,94,.3);border-radius:999px;padding:2px 10px;
+  display:inline-block;margin-top:8px;font-size:9.5px;color:var(--warm);
+  font-family:var(--mono);letter-spacing:.14em;
+  border:1px solid rgba(233,173,106,.3);border-radius:999px;padding:3px 10px;
+  text-transform:uppercase;
 }
 #mode-btn{
-  display:block;width:100%;margin-top:10px;
-  border:1px solid rgba(94,203,255,.35);background:rgba(94,203,255,.1);color:var(--accent);
-  font-family:inherit;font-size:12.5px;padding:8px 12px;border-radius:9px;cursor:pointer;
-  transition:all .18s;letter-spacing:1px;
+  display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;
+  border:1px solid rgba(124,196,255,.3);background:var(--accent-soft);color:var(--accent);
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;
+  transition:all .18s;text-transform:uppercase;
 }
-#mode-btn:hover{background:rgba(94,203,255,.22);transform:translateY(-1px)}
-#mode-btn.galaxy{border-color:rgba(255,180,94,.45);color:var(--accent-warm);background:rgba(255,180,94,.1)}
+#mode-btn:hover{background:rgba(124,196,255,.2);border-color:rgba(124,196,255,.55)}
+#mode-btn.galaxy{border-color:rgba(233,173,106,.4);color:var(--warm);background:var(--warm-soft)}
 
 /* ---------- 右上视角按钮 ---------- */
 #view-dock{
   position:fixed;top:20px;right:20px;z-index:10;
-  display:flex;flex-direction:column;gap:6px;padding:10px;
+  display:flex;flex-direction:column;gap:5px;padding:10px;
   animation:fadeSlideIn .8s .1s ease both;
   max-height:calc(100vh - 40px);overflow-y:auto;
+  scrollbar-width:none;
 }
-#view-dock::-webkit-scrollbar{width:4px}
-#view-dock::-webkit-scrollbar-thumb{background:rgba(110,170,255,.25)}
+#view-dock::-webkit-scrollbar{display:none}
 #view-dock.hidden{display:none}
-#view-dock .dock-label{font-size:11px;color:var(--text-dim);letter-spacing:2px;text-align:center;padding-bottom:2px}
-.vbtn{
-  border:1px solid var(--panel-border);background:rgba(20,30,52,.55);color:var(--text);
-  font-family:inherit;font-size:12.5px;padding:7px 14px;border-radius:9px;cursor:pointer;
-  transition:all .18s ease;white-space:nowrap;
+#view-dock .dock-label{
+  font-size:9.5px;color:var(--faint);letter-spacing:.24em;text-align:center;
+  padding-bottom:4px;font-family:var(--mono);text-transform:uppercase;
 }
-.vbtn:hover{border-color:rgba(94,203,255,.55);background:rgba(30,48,80,.75);transform:translateX(-3px)}
-.vbtn.active{background:rgba(94,203,255,.16);border-color:var(--accent);color:var(--accent)}
+.vbtn{
+  border:1px solid transparent;background:transparent;color:var(--dim);
+  font-family:var(--sans);font-size:12px;padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;
+  transition:all .16s ease;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;text-align:left;
+}
+.vbtn .en{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase}
+.vbtn:hover{border-color:var(--line-strong);background:rgba(244,246,248,.05);color:var(--ink);transform:translateX(-2px)}
+.vbtn.active{background:var(--accent-soft);border-color:rgba(124,196,255,.35);color:var(--accent)}
+.vbtn.active .en{color:var(--accent)}
 #planet-list{
-  display:none;flex-direction:column;gap:4px;
-  margin-left:8px;padding-left:8px;
-  border-left:2px solid rgba(94,203,255,.3);
+  display:none;flex-direction:column;gap:3px;
+  margin-left:8px;padding-left:10px;
+  border-left:1px solid var(--line);
 }
 #planet-list.open{display:flex}
 .pv{padding:5px 12px;font-size:11.5px}
 
 /* ---------- 信息面板 ---------- */
 #info-panel{
-  position:fixed;left:20px;bottom:96px;z-index:10;
-  width:330px;max-height:calc(100vh - 260px);overflow-y:auto;
-  padding:18px 20px;animation:fadeSlideIn .8s .2s ease both;
-  transition:opacity .3s;
+  position:fixed;left:20px;bottom:88px;z-index:10;
+  width:340px;max-height:calc(100vh - 250px);overflow-y:auto;
+  padding:16px 18px;animation:fadeSlideIn .8s .2s ease both;
+  transition:opacity .3s;scrollbar-width:thin;
 }
 #info-panel.hidden{visibility:hidden;opacity:0;pointer-events:none}
-#info-panel::-webkit-scrollbar{width:5px}
-#info-panel::-webkit-scrollbar-thumb{background:rgba(110,170,255,.25);border-radius:3px}
+#info-panel::-webkit-scrollbar{width:4px}
+#info-panel::-webkit-scrollbar-thumb{background:rgba(244,246,248,.18);border-radius:2px}
 #info-close{
-  position:absolute;top:10px;right:12px;border:none;background:none;color:var(--text-dim);
-  font-size:16px;cursor:pointer;line-height:1;
+  position:absolute;top:10px;right:12px;border:none;background:none;color:var(--faint);
+  font-size:15px;cursor:pointer;line-height:1;font-family:var(--mono);
 }
-#info-close:hover{color:var(--text)}
-#info-name{font-size:20px;font-weight:900;letter-spacing:1px;margin-bottom:2px}
-#info-tag{font-size:11.5px;color:var(--accent);letter-spacing:1px;margin-bottom:12px}
+#info-close:hover{color:var(--ink)}
+#info-tag{font-size:9.5px;color:var(--accent);letter-spacing:.2em;margin-bottom:10px;font-family:var(--mono);text-transform:uppercase}
+#info-name{font-size:19px;font-weight:700;letter-spacing:.03em;margin-bottom:10px;color:var(--ink)}
 .data-row{
-  display:flex;justify-content:space-between;align-items:baseline;
-  padding:5px 0;border-bottom:1px dashed rgba(110,170,255,.12);font-size:12.5px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:6px 0;border-bottom:1px solid rgba(244,246,248,.07);font-size:12px;
 }
-.data-row .k{color:var(--text-dim);flex-shrink:0}
-.data-row .v{font-family:var(--mono);font-size:12px;text-align:right}
-#info-desc{font-size:12.5px;color:#c6d4ee;margin-top:12px;text-wrap:pretty}
-#info-desc b{color:var(--accent);font-weight:700}
-#info-desc .em{color:var(--accent-warm)}
+.data-row:last-child{border-bottom:none}
+.data-row .k{color:var(--dim);flex-shrink:0}
+.data-row .v{font-family:var(--mono);font-size:11.5px;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+#info-desc{font-size:12px;color:var(--dim);margin-top:12px;text-wrap:pretty}
+#info-desc b{color:var(--accent);font-weight:600}
+#info-desc .em{color:var(--warm)}
 
-/* ---------- 底部控制栏 ---------- */
+/* ---------- 底部控制栏（桌面） ---------- */
 #control-bar{
   position:fixed;left:50%;bottom:18px;z-index:10;transform:translateX(-50%);
-  display:flex;align-items:center;gap:13px;padding:12px 18px;
+  display:flex;align-items:center;gap:14px;padding:12px 18px;
   animation:fadeSlideUp .8s .3s ease both;max-width:calc(100vw - 40px);
 }
 @keyframes fadeSlideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 @keyframes fadeSlideUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 #play-btn{
-  width:38px;height:38px;border-radius:50%;flex-shrink:0;
-  border:1px solid rgba(94,203,255,.4);background:rgba(94,203,255,.12);color:var(--accent);
-  font-size:14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  border:1px solid rgba(124,196,255,.4);background:var(--accent-soft);color:var(--accent);
+  font-size:13px;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;
 }
-#play-btn:hover{background:rgba(94,203,255,.25);transform:scale(1.06)}
-#play-btn.paused{border-color:rgba(255,180,94,.5);color:var(--accent-warm);background:rgba(255,180,94,.1)}
-.ctrl-group{display:flex;flex-direction:column;gap:3px}
-.ctrl-group label{font-size:10.5px;color:var(--text-dim);letter-spacing:1px}
+#play-btn:hover{background:rgba(124,196,255,.22);transform:scale(1.06)}
+#play-btn.paused{border-color:rgba(233,173,106,.5);color:var(--warm);background:var(--warm-soft)}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-group>label{font-size:9.5px;color:var(--faint);letter-spacing:.16em;font-family:var(--mono);text-transform:uppercase}
+.ctrl-group>label span{color:var(--dim)}
 #speed{
-  width:130px;height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;
-  background:linear-gradient(90deg,var(--accent) var(--fill,45%),rgba(110,170,255,.18) var(--fill,45%));
+  width:140px;height:3px;-webkit-appearance:none;appearance:none;border-radius:1.5px;
+  background:linear-gradient(90deg,var(--accent) var(--fill,45%),rgba(244,246,248,.15) var(--fill,45%));
   outline:none;cursor:pointer;
 }
 #speed::-webkit-slider-thumb{
-  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
-  background:var(--accent);box-shadow:0 0 8px rgba(94,203,255,.8);cursor:pointer;
+  -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 10px rgba(124,196,255,.7);cursor:pointer;
 }
 .chips{display:flex;gap:4px}
 .chipbtn{
-  font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--panel-border);
-  background:rgba(20,30,52,.6);color:var(--text-dim);cursor:pointer;font-family:inherit;transition:all .15s;
+  font-size:9.5px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);
+  background:rgba(244,246,248,.04);color:var(--faint);cursor:pointer;
+  font-family:var(--mono);letter-spacing:.06em;transition:all .15s;
 }
-.chipbtn:hover{color:var(--accent);border-color:rgba(94,203,255,.5)}
+.chipbtn:hover{color:var(--accent);border-color:rgba(124,196,255,.45);background:var(--accent-soft)}
 #quality{
-  width:86px;height:26px;border-radius:8px;padding:0 6px;
-  background:rgba(20,30,52,.7);color:var(--text);
-  border:1px solid var(--panel-border);font-family:inherit;font-size:12px;outline:none;cursor:pointer;
+  width:92px;height:26px;border-radius:var(--r-sm);padding:0 8px;
+  background:rgba(244,246,248,.05);color:var(--dim);
+  border:1px solid var(--line);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer;
 }
-#quality option{background:#141e34;color:var(--text)}
-#sim-date{font-family:var(--mono);font-size:13px;color:var(--text);min-width:118px;text-align:center}
-#sim-date small{display:block;font-size:10px;color:var(--text-dim);font-family:inherit}
-.toggles{display:flex;gap:9px;flex-wrap:wrap;max-width:230px}
+#quality option{background:#0a0e15;color:var(--dim)}
+#sim-date{font-family:var(--mono);font-size:14px;color:var(--ink);min-width:118px;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#sim-date small{display:block;font-size:9px;color:var(--faint);font-family:var(--mono);letter-spacing:.2em;text-transform:uppercase;margin-top:2px}
+.toggles{display:flex;gap:10px;flex-wrap:wrap;max-width:236px}
 .tg{
-  display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim);
-  cursor:pointer;user-select:none;transition:color .15s;
+  display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--dim);
+  cursor:pointer;user-select:none;transition:color .15s;letter-spacing:.04em;
 }
-.tg:hover{color:var(--text)}
+.tg:hover{color:var(--ink)}
 .tg input{display:none}
 .tg .box{
-  width:13px;height:13px;border-radius:4px;border:1px solid rgba(110,170,255,.4);
-  display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent;
-  transition:all .15s;flex-shrink:0;
+  width:13px;height:13px;border-radius:4px;border:1px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;
+  transition:all .15s;flex-shrink:0;font-family:var(--mono);
 }
-.tg input:checked+.box{background:rgba(94,203,255,.25);border-color:var(--accent);color:var(--accent)}
+.tg input:checked+.box{background:var(--accent-soft);border-color:rgba(124,196,255,.6);color:var(--accent)}
 
 /* ---------- 行星标签（CSS2D） ---------- */
 .p-label{
-  font-size:11px;color:#bcd2f5;letter-spacing:1px;cursor:pointer;
-  text-shadow:0 0 6px rgba(0,0,0,.9);transition:color .15s;
+  font-size:10.5px;color:var(--dim);letter-spacing:.14em;cursor:pointer;
+  text-shadow:0 0 6px rgba(0,0,0,.95);transition:color .15s;
   padding:2px 6px;user-select:none;white-space:nowrap;
+  font-family:var(--mono);text-transform:uppercase;
 }
-.p-label.sm{font-size:9.5px;color:#9db4d8;padding:1px 4px}
+.p-label.sm{font-size:9px;color:var(--faint);padding:1px 4px;letter-spacing:.1em}
 .p-label:hover,.p-label.sel{color:var(--accent)}
-.p-label.sel{text-shadow:0 0 10px rgba(94,203,255,.7)}
+.p-label.sel{text-shadow:0 0 12px rgba(124,196,255,.75)}
 
 /* ---------- 日食/月食横幅 ---------- */
 #eclipse-banner{
   position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:12;
-  padding:8px 20px;border-radius:999px;font-size:13px;letter-spacing:1px;
-  border:1px solid rgba(255,180,94,.45);background:rgba(30,20,8,.8);color:var(--accent-warm);
-  display:none;backdrop-filter:blur(8px);animation:fadeSlideIn .5s ease both;
+  padding:8px 20px;border-radius:999px;font-size:12px;
+  font-family:var(--mono);letter-spacing:.1em;
+  border:1px solid rgba(233,173,106,.45);background:rgba(10,8,4,.85);color:var(--warm);
+  display:none;backdrop-filter:blur(10px);animation:fadeSlideIn .5s ease both;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 30px rgba(0,0,0,.5);
 }
 #eclipse-banner.on{display:block}
 
 /* ---------- 提示浮层 ---------- */
 #toast{
   position:fixed;bottom:110px;left:50%;transform:translateX(-50%);z-index:20;
-  padding:7px 16px;border-radius:999px;font-size:12px;
-  border:1px solid var(--panel-border);background:rgba(10,16,30,.85);color:var(--text);
+  padding:8px 18px;border-radius:999px;font-size:11.5px;font-family:var(--mono);letter-spacing:.04em;
+  border:1px solid var(--line-strong);background:var(--panel-solid);color:var(--ink);
   opacity:0;transition:opacity .3s;pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 30px rgba(0,0,0,.5);
 }
 #fly-hint{
   position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:9;
-  font-size:12px;color:var(--text-dim);text-shadow:0 0 8px rgba(0,0,0,.8);
-  pointer-events:none;display:none;
+  font-size:11px;color:var(--dim);font-family:var(--mono);letter-spacing:.06em;
+  pointer-events:none;display:none;text-shadow:0 0 8px rgba(0,0,0,.9);
 }
 #fly-hint.on{display:block}
 
 /* ---------- 移动端摇杆 ---------- */
 #joy{
-  position:fixed;left:26px;bottom:130px;width:118px;height:118px;border-radius:50%;
-  border:2px solid rgba(110,170,255,.3);background:rgba(10,16,30,.35);
+  position:fixed;left:22px;bottom:calc(var(--tab-h) + 14px);width:116px;height:116px;border-radius:50%;
+  border:1px solid var(--line-strong);background:rgba(4,6,9,.4);
   display:none;z-index:15;touch-action:none;
+  box-shadow:inset 0 0 0 1px rgba(244,246,248,.05);
 }
 #joy.on{display:block}
 #joy-thumb{
-  position:absolute;left:34px;top:34px;width:50px;height:50px;border-radius:50%;
-  background:rgba(94,203,255,.35);border:1px solid var(--accent);
-  box-shadow:0 0 12px rgba(94,203,255,.4);
+  position:absolute;left:33px;top:33px;width:50px;height:50px;border-radius:50%;
+  background:var(--accent-soft);border:1px solid rgba(124,196,255,.5);
+  box-shadow:0 0 14px rgba(124,196,255,.4);
 }
+
+/* ---------- 移动端底部堆叠收纳（≤760px） ---------- */
+#mobile-tabs{
+  display:none;position:fixed;left:50%;bottom:10px;z-index:16;
+  transform:translateX(-50%);
+  border-radius:999px;padding:6px;
+}
+#mobile-tabs .mt-row{display:flex;gap:4px}
+.mtbtn{
+  border:none;background:transparent;color:var(--faint);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  padding:9px 16px;border-radius:999px;cursor:pointer;transition:all .18s;
+  display:flex;align-items:center;gap:6px;text-transform:uppercase;
+}
+.mtbtn:hover{color:var(--dim)}
+.mtbtn.active{background:var(--accent-soft);color:var(--accent)}
+.mtbtn.active[data-tab="info"]{background:var(--warm-soft);color:var(--warm)}
+/* 抽屉：移动端把三大面板变成底部堆叠层 */
+@media (max-width:760px){
+  #title-card{
+    top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;max-width:none;
+    padding:10px 14px;display:flex;align-items:center;gap:10px;
+    border-radius:var(--r-sm);overflow:hidden;
+  }
+  #title-card .t-main{flex:1;min-width:0}
+  #title-card h1{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #title-card h1 .ver{margin-left:4px}
+  #title-card .sub{display:none}
+  #title-card .chip{display:none;margin:0;font-size:8.5px;padding:2px 8px;flex-shrink:0}
+  #mode-btn{width:auto;margin:0;padding:7px 9px;font-size:9px;letter-spacing:.06em;flex-shrink:0;white-space:nowrap}
+  /* 面板全部转为底部抽屉层，由 tab 控制显隐 */
+  #info-panel,#view-dock,#control-bar{
+    left:10px;right:10px;bottom:calc(var(--tab-h) + 10px);top:auto;width:auto;
+    max-height:min(46vh,420px);transform:none;animation:none;
+    padding:14px 16px;border-radius:var(--r-lg);
+    display:none;
+  }
+  #info-panel.open,#view-dock.open,#control-bar.open{display:block}
+  #view-dock.open{display:flex}
+  #info-panel{left:10px;bottom:calc(var(--tab-h) + 10px)}
+  #view-dock{flex-direction:row;flex-wrap:wrap;gap:5px;overflow-y:auto}
+  #view-dock .vbtn{font-size:11px;padding:7px 11px}
+  #view-dock .vbtn .en{display:none}
+  #view-dock .dock-label{display:none}
+  #planet-list{display:flex!important;flex-direction:row;flex-wrap:wrap;border-left:none;padding-left:0;margin-left:0;gap:4px}
+  #control-bar{flex-direction:column;align-items:stretch;gap:10px}
+  #control-bar .ctrl-group,#control-bar #sim-date,#control-bar .toggles,#control-bar #quality{width:100%}
+  #speed{width:100%}
+  #sim-date{text-align:left;min-width:0}
+  #sim-date small{display:inline;margin-left:8px}
+  .toggles{max-width:none;gap:8px}
+  /* 抽屉打开时隐藏提示 */
+  #hint{display:none}
+  #foot-note{display:none}
+  /* 移动端 tab 栏显示 */
+  #mobile-tabs{display:block}
+  /* 桌面专用元素隐藏 */
+  #view-dock:not(.open){display:none}
+}
+@media (min-width:761px){ #mobile-tabs{display:none!important} }
 
 /* ---------- 底部说明 ---------- */
 #foot-note{
   position:fixed;right:20px;bottom:18px;z-index:9;max-width:330px;
-  font-size:10.5px;color:rgba(143,163,198,.75);line-height:1.5;text-align:right;
-  text-wrap:pretty;pointer-events:none;
+  font-size:10px;color:var(--faint);line-height:1.6;text-align:right;
+  text-wrap:pretty;pointer-events:none;font-family:var(--mono);letter-spacing:.02em;
 }
 #hint{
   position:fixed;left:50%;top:112px;transform:translateX(-50%);z-index:9;
-  font-size:12px;color:var(--text-dim);letter-spacing:.5px;pointer-events:none;
-  transition:opacity 1s;text-shadow:0 0 8px rgba(0,0,0,.8);text-align:center;
-}
-
-@media (max-width:900px){
-  #title-card{max-width:240px;padding:12px 14px}
-  #title-card h1{font-size:16px}
-  #info-panel{width:270px;left:12px;bottom:150px;max-height:38vh}
-  #view-dock{top:auto;bottom:150px;right:12px}
-  #foot-note{display:none}
-  #control-bar{flex-wrap:wrap;justify-content:center;gap:8px;padding:10px 12px;bottom:10px}
-  #hint{display:none}
-  #joy{left:16px;bottom:190px}
+  font-size:11px;color:var(--faint);letter-spacing:.08em;pointer-events:none;
+  transition:opacity 1s;text-shadow:0 0 8px rgba(0,0,0,.9);text-align:center;font-family:var(--mono);
 }
 </style>
 <script type="importmap">
@@ -264,35 +382,46 @@ canvas{display:block}
 </head>
 <body>
 
-<div id="loading"><div class="ring"></div><div>正在加载三维引擎与贴图…</div></div>
+<div id="loading">
+  <div class="dial">
+    <div class="ring" id="load-ring"></div>
+    <div class="core">
+      <div class="lbl">SYSTEM INIT</div>
+      <div class="pct" id="load-pct">000%</div>
+      <div class="zh">系统初始化</div>
+    </div>
+  </div>
+</div>
 <div id="stage"></div>
 <div id="labels-root"></div>
 
-<!-- 【标题区】可修改 -->
+<!-- 【标题区】主标题与副标题可修改；移动端压缩为一行 -->
 <header id="title-card" class="glass">
-  <h1>太阳系 · 3D 交互模拟 <span style="font-size:12px;color:var(--text-dim);font-weight:500">v3</span></h1>
-  <div class="sub">真实时间比例 · 日月食阴影 · 银河背景 · 自由飞行</div>
-  <span class="chip">日月地公转自转均为真实周期 · 可勾选放慢自转演示</span>
-  <button id="mode-btn">🌌 银河系模式（太阳携带行星的大公转）</button>
+  <div class="t-main">
+    <h1>太阳系 · 3D 交互模拟<span class="ver">V4</span></h1>
+    <div class="sub">真实时间比例 · 日月食阴影 · 银河系模式 · 自由飞行</div>
+    <span class="chip">EPOCH REAL · 日月地为真实周期</span>
+  </div>
+  <button id="mode-btn">🌌 银河模式</button>
 </header>
 
 <!-- 【操作提示】几秒后自动消失 -->
-<div id="hint">拖拽旋转 · 滚轮缩放 · 点击天体查看详情 · V 键进入自由飞行（WASD 移动）</div>
+<div id="hint">拖拽旋转 · 滚轮缩放 · 点击天体查看详情 · V 键自由飞行（WASD）</div>
 
 <!-- 【日食/月食横幅】自动显示 -->
 <div id="eclipse-banner"></div>
 
-<!-- 【视角按钮区】可修改；行星视角点击展开 -->
+<!-- 【视角按钮区】文字可修改；行星视角点击展开 -->
 <nav id="view-dock" class="glass">
-  <div class="dock-label">视角</div>
-  <button class="vbtn" data-view="panorama">🌐 全景斜视</button>
-  <button class="vbtn" data-view="top">🌐 正上方俯瞰</button>
-  <button class="vbtn" data-view="ecliptic">🌐 黄道面平视</button>
-  <button class="vbtn" data-view="sun">☀ 太阳特写</button>
-  <button class="vbtn" data-view="earth">🌍 地月与卫星</button>
-  <button class="vbtn" data-view="saturn">🪐 土星环特写</button>
-  <button class="vbtn" data-view="edge">🌐 系外与奥尔特云</button>
-  <button class="vbtn" id="planet-fold">🪐 行星视角 ▸</button>
+  <div class="dock-label">Viewpoints · 视角</div>
+  <button class="vbtn" data-view="panorama">🌐 全景斜视 <span class="en">PANO</span></button>
+  <button class="vbtn" data-view="top">🌐 正上方俯瞰 <span class="en">TOP</span></button>
+  <button class="vbtn" data-view="ecliptic">🌐 黄道面平视 <span class="en">ECLIPTIC</span></button>
+  <button class="vbtn" data-view="sun">☀ 太阳特写 <span class="en">SOL</span></button>
+  <button class="vbtn" data-view="earth">🌍 地月与卫星 <span class="en">TERRA</span></button>
+  <button class="vbtn" data-view="saturn">🪐 土星环特写 <span class="en">SATURN</span></button>
+  <button class="vbtn" data-view="edge">🌐 系外与奥尔特云 <span class="en">DEEP</span></button>
+  <button class="vbtn" id="planet-fold">🪐 行星视角 ▸ <span class="en">PLANETS</span></button>
   <div id="planet-list">
     <button class="vbtn pv" data-view="p_mercury">水星</button>
     <button class="vbtn pv" data-view="p_venus">金星</button>
@@ -304,15 +433,15 @@ canvas{display:block}
     <button class="vbtn pv" data-view="p_neptune">海王星</button>
     <button class="vbtn pv" data-view="p_pluto">冥王星</button>
   </div>
-  <button class="vbtn" id="fly-btn">🎮 自由飞行（V）</button>
-  <button class="vbtn" id="eclipse-btn">🌑 日食演示</button>
+  <button class="vbtn" id="fly-btn">🎮 自由飞行 <span class="en">FLY · V</span></button>
+  <button class="vbtn" id="eclipse-btn">🌑 日食演示 <span class="en">ECLIPSE</span></button>
 </nav>
 
 <!-- 【信息面板】 -->
 <aside id="info-panel" class="glass hidden">
   <button id="info-close" title="关闭">✕</button>
-  <div id="info-name">—</div>
   <div id="info-tag">—</div>
+  <div id="info-name">—</div>
   <div id="info-data"></div>
   <div id="info-desc"></div>
 </aside>
@@ -355,10 +484,19 @@ canvas{display:block}
 </div>
 
 <!-- 【自由飞行提示】 -->
-<div id="fly-hint">自由飞行：W/A/S/D 平移 · Space 上升 · C 下降 · Shift 加速 · 拖拽转向 · 滚轮调速 · V/ESC 退出</div>
+<div id="fly-hint">自由飞行 · W/A/S/D 平移 · SPACE 上升 · C 下降 · SHIFT 加速 · 拖拽转向 · 滚轮调速 · V/ESC 退出</div>
 <div id="toast"></div>
 <!-- 【移动端摇杆】自由飞行模式下显示 -->
 <div id="joy"><div id="joy-thumb"></div></div>
+
+<!-- 【移动端底部堆叠收纳栏】≤760px 显示：三个 tab 切换对应抽屉 -->
+<nav id="mobile-tabs" class="glass">
+  <div class="mt-row">
+    <button class="mtbtn" data-tab="dock">视角 Views</button>
+    <button class="mtbtn" data-tab="info">详情 Info</button>
+    <button class="mtbtn" data-tab="bar">控制 Control</button>
+  </div>
+</nav>
 
 <script type="module">
 /* ================================================================
@@ -488,13 +626,24 @@ galaxyScene.add(galLight);
 const texLoader = new THREE.TextureLoader();
 texLoader.crossOrigin = 'anonymous';
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
+// 加载进度：贴图计数驱动刻度盘（真实加载数约 17：12 张主贴图 + 4 张辅助 + 1 银河）
+const TEX_TOTAL = 17; let TEX_LOADED = 0;
+function texTick(){
+  TEX_LOADED++;
+  const p = Math.min(100, Math.round(TEX_LOADED / TEX_TOTAL * 100));
+  const pct = document.getElementById('load-pct'), ring = document.getElementById('load-ring');
+  if (pct) pct.textContent = String(p).padStart(3, '0') + '%';
+  if (ring) ring.style.setProperty('--p', p + '%');
+}
+setTimeout(() => { const p = document.getElementById('load-pct'); if (p) p.textContent = '025%'; const r = document.getElementById('load-ring'); if (r) r.style.setProperty('--p', '25%'); }, 60);
 function loadTexInto(mat, url, { colorSpace = true, apply } = {}){
   texLoader.load(url, t => {
     if (colorSpace) t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = Math.min(Q.aniso, maxAniso);
     if (apply) apply(t); else mat.map = t;
     mat.needsUpdate = true;
-  }, undefined, () => { /* 加载失败：保留程序化纹理 */ });
+    texTick();
+  }, undefined, () => { texTick(); /* 加载失败：保留程序化纹理 */ });
 }
 
 /* ---------------- 程序化纹理工厂 ---------------- */
@@ -1447,6 +1596,7 @@ function deselect(){
 function selectBody(ref){
   if (!flyMode) followObj = ref.followObj;
   showInfo(ref.body, ref.labelEl);
+  if (ref.isPlanet && ref.body.key !== 'earth') closeDrawers();  // 移动端：点击行星后收起抽屉看场景（地月特写除外）
 }
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let downXY = null;
@@ -1487,6 +1637,7 @@ function focusPlanet(pl, camOff){
 }
 function applyPreset(key, keepSelect){
   document.querySelectorAll('#view-dock .vbtn').forEach(b => b.classList.toggle('active', b.dataset.view === key && !keepSelect));
+  closeDrawers();   // 移动端：选择视角后收起抽屉，露出场景
   if (key === 'earth'){ focusPlanet(earthObj, new THREE.Vector3(7, 3.2, 7)); return; }
   if (key === 'saturn'){
     focusPlanet(planets.find(p => p.body.key === 'saturn'), new THREE.Vector3(14, 7, 14)); return;
@@ -1644,13 +1795,12 @@ function setMode(m){
   // 标签可见性：直接控制 DOM（不属于当前渲染场景的标签不会被 CSS2DRenderer 自动隐藏）
   solarLabelObjs.forEach(o => { o.visible = m === 'solar'; o.element.style.display = m === 'solar' ? '' : 'none'; });
   galaxyLabelObjs.forEach(o => { o.visible = m === 'galaxy'; o.element.style.display = m === 'galaxy' ? '' : 'none'; });
-  deselect();
-  if (m === 'galaxy'){
+  deselect();  if (m === 'galaxy'){
     camera.position.copy(camStateGalaxy.pos);
     controls.target.copy(camStateGalaxy.tgt);
     controls.maxDistance = 700;
     $('view-dock').classList.add('hidden');
-    modeBtn.textContent = '☀ 返回太阳系';
+    modeBtn.textContent = '☀ 太阳系模式';
     modeBtn.classList.add('galaxy');
     prevTargetPos.copy(controls.target);
   } else {
@@ -1658,13 +1808,32 @@ function setMode(m){
     controls.target.copy(camStateSolar.tgt);
     controls.maxDistance = 1500;
     $('view-dock').classList.remove('hidden');
-    modeBtn.textContent = '🌌 银河系模式（太阳携带行星的大公转）';
+    modeBtn.textContent = '🌌 银河模式';
     modeBtn.classList.remove('galaxy');
     prevTargetPos.copy(controls.target);
     deselect();
   }
   updateSpeedUI();
 }
+
+/* ---------------- 移动端底部堆叠收纳 ---------------- */
+const mtbtns = document.querySelectorAll('.mtbtn');
+const DRAWER_IDS = ['view-dock', 'info-panel', 'control-bar'];
+function closeDrawers(){
+  mtbtns.forEach(x => x.classList.remove('active'));
+  DRAWER_IDS.forEach(id => document.getElementById(id).classList.remove('open'));
+}
+const isMobileUI = () => window.innerWidth <= 760;
+mtbtns.forEach(b => b.addEventListener('click', () => {
+  const wasActive = b.classList.contains('active');
+  closeDrawers();
+  if (wasActive) return;                       // 再点一次收起
+  b.classList.add('active');
+  const id = b.dataset.tab === 'dock' ? 'view-dock' : b.dataset.tab === 'info' ? 'info-panel' : 'control-bar';
+  if (id === 'info-panel' && infoPanel.classList.contains('hidden')) selectBody(earthObj);   // 无选中时默认展示地球
+  document.getElementById(id).classList.add('open');
+}));
+addEventListener('resize', () => { if (!isMobileUI()) closeDrawers(); });
 
 /* ---------------- 主循环 ---------------- */
 const clock = new THREE.Clock();

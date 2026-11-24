@@ -7,7 +7,35 @@
 
 ---
 
-## v3 · 2026-11-23（当前线上版本）
+## v4 · 2026-11-24（当前线上版本）· UI/UX 重设计
+
+文件：`太阳系3D交互模拟 v4.html`（发布副本为 `index.html`）。设计方向参考 [Solar Atlas](https://solar-system-atlas.pages.dev/solar/)（配色与字体系统取自其源码分析）。
+
+**设计系统重做**
+- 三级灰度文字体系（ink #f4f6f8 / dim 66% / faint 38%），替代原有单一蓝灰色
+- 双强调色：科技蓝 `#7cc4ff`（交互/选中）+ 琥珀金 `#e9ad6a`（时间/日食/警示），对应参考站 EPOCH 琥珀体系
+- 字体：新增 **IBM Plex Mono** 承载数据与数字（等宽 tabular-nums）；全大写英文微标签（letter-spacing .12–.24em）与中文注释双列排版
+- 面板质感升级：渐变深玻璃（rgba 4,6,9 .66→.42）+ blur 18px + 顶部 1px 内高光（`inset 0 1px rgba(255,255,255,.06)`）+ 内描边替代外边框，16/10px 双级圆角
+- 标题卡、视角面板（每项附英文微标签 PANO/TERRA/SATURN…）、信息面板（等宽数据行右对齐）、控制栏全部按新体系重排
+
+**移动端 UI 堆叠收纳（本版核心）**
+- ≤760px：顶部压缩为一行（标题 + 银河模式按钮），foot-note/hint 等次要 UI 隐藏
+- 新增底部玻璃 3-tab 收纳栏（视角 Views / 详情 Info / 控制 Control，含 safe-area 适配）
+- 三大面板转为底部半高抽屉：点击 tab 弹出、再点收起；选择视角或点击行星后自动收起露出场景
+- 详情 tab 在无选中天体时自动展示地球；桌面端恢复时自动清理抽屉状态
+
+**加载屏**
+- 改为参考站式圆形刻度盘：conic-gradient 进度环 + 旋转虚线外环 + 三层双语排版（SYSTEM INIT / 大数字 / 系统初始化）
+- 进度由真实贴图加载计数驱动（17 项资源）
+
+**修复**
+- 修复移动端标题栏模式按钮溢出（flex 收缩 + overflow 保护）
+
+**验证**：无头浏览器桌面（1680×960）与移动端（390×844）两档截图全部通过；移动端 tab 抽屉交互实测（browser-use 点击验证）正常；GitHub Pages 更新后 HTTP 200。
+
+---
+
+## v3 · 2026-11-23
 
 文件：`太阳系3D交互模拟 v3.html`（发布副本为 `index.html`）
 
@@ -77,5 +105,6 @@
 | 2026-11-23 | 创建 GitHub 公开仓库 `EthanLiang21/Galaxy-test`，推送 v3 为 `index.html` + README |
 | 2026-11-23 | 推送 `gh-pages` 分支启用 GitHub Pages：`https://ethanliang21.github.io/Galaxy-test/` |
 | 2026-11-23 | 新增本版本记录文件 `UPDATE-HISTORY.md` |
+| 2026-11-24 | v4 UI/UX 重设计上线（Solar Atlas 风格 + 移动端堆叠收纳），同步 main 与 gh-pages |
 
 <!-- 【更新方式】以后每次修改功能或内容，先改本地 index.html，再在顶部追加新版本条目，最后同时推送到 main 与 gh-pages 分支；线上链接不变。 -->
