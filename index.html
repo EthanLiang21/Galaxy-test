@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>太阳系 3D 交互模拟 v3 · 真实时间 · 日月食 · 银河系模式</title>
+<title>太阳系 3D 交互模拟 beta0.5 · 太阳物理着色器 · 科研观测站 UI</title>
 <!-- 【页面标题】可修改 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -159,8 +159,14 @@ canvas{display:block}
 #info-panel.hidden{visibility:hidden;opacity:0;pointer-events:none}
 #info-panel::-webkit-scrollbar{width:4px}
 #info-panel::-webkit-scrollbar-thumb{background:rgba(244,246,248,.18);border-radius:2px}
+.panel-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:8px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;
+}
+.ph-id{color:var(--faint)}
 #info-close{
-  position:absolute;top:10px;right:12px;border:none;background:none;color:var(--faint);
+  position:absolute;top:32px;right:12px;border:none;background:none;color:var(--faint);
   font-size:15px;cursor:pointer;line-height:1;font-family:var(--mono);
 }
 #info-close:hover{color:var(--ink)}
@@ -224,6 +230,29 @@ canvas{display:block}
   transition:all .15s;flex-shrink:0;font-family:var(--mono);
 }
 .tg input:checked+.box{background:var(--accent-soft);border-color:rgba(124,196,255,.6);color:var(--accent)}
+
+/* ---------- 左下角遥测 HUD：科研观测站细线框 ---------- */
+#telemetry{
+  position:fixed;left:12px;bottom:76px;z-index:9;
+  min-width:196px;padding:9px 12px 8px;
+  background:linear-gradient(135deg,rgba(6,11,18,.72),rgba(6,11,18,.42));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(124,196,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+  pointer-events:none;
+}
+.tel-title{
+  font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:var(--accent);
+  display:flex;align-items:center;gap:6px;margin-bottom:7px;
+}
+.tel-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.tel-id{margin-left:auto;color:var(--faint)}
+.tel-grid{display:flex;gap:10px}
+.tel-cell{display:flex;flex-direction:column;gap:1px;min-width:52px}
+.tel-k{font-family:var(--mono);font-size:7.5px;letter-spacing:.12em;color:var(--faint)}
+.tel-v{font-family:var(--mono);font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.2}
+.tel-u{font-family:var(--mono);font-size:7px;color:var(--faint);letter-spacing:.1em}
 
 /* ---------- 行星标签（CSS2D） ---------- */
 .p-label{
@@ -367,7 +396,7 @@ canvas{display:block}
 <!-- 【顶栏】通栏停靠：标题 | 银河模式 | 说明 | 模拟日期 | 画质 -->
 <header id="topbar" class="glass">
   <h1>太阳系 · 3D 交互模拟<span class="ver">beta0.5</span></h1>
-  <span class="chip">EPOCH REAL · 日月地真实周期</span>
+  <span class="chip">SOLAR OBSERVATORY · 真实周期</span>
   <div class="tb-spacer"></div>
   <button id="mode-btn">🌌 银河模式</button>
   <button id="info-toggle" title="比例与素材说明">ⓘ</button>
@@ -384,6 +413,16 @@ canvas{display:block}
 
 <!-- 【日食/月食横幅】自动显示 -->
 <div id="eclipse-banner"></div>
+
+<!-- 【左下角观测 HUD】相机距离 / FPS / 模拟时间；数值实时更新，样式为科研观测站细线框 -->
+<div id="telemetry">
+  <div class="tel-title"><span class="tel-dot"></span>OBSERVATORY TELEMETRY <span class="tel-id">SYS-01</span></div>
+  <div class="tel-grid">
+    <div class="tel-cell"><span class="tel-k">CAM DIST</span><span class="tel-v" id="tel-dist">—</span><span class="tel-u">R⊕</span></div>
+    <div class="tel-cell"><span class="tel-k">FPS</span><span class="tel-v" id="tel-fps">—</span><span class="tel-u">FR/S</span></div>
+    <div class="tel-cell"><span class="tel-k">SIM TIME</span><span class="tel-v" id="tel-time">—</span><span class="tel-u">D+</span></div>
+  </div>
+</div>
 
 <!-- 【视角按钮区】文字可修改；行星视角点击展开 -->
 <nav id="view-dock" class="glass">
@@ -412,8 +451,9 @@ canvas{display:block}
   <button class="vbtn" id="eclipse-btn">🌑 日食演示 <span class="en">ECLIPSE</span></button>
 </nav>
 
-<!-- 【信息面板】 -->
+<!-- 【右侧当前参数面板】科研观测站式细线框 + 科学参数标注 -->
 <aside id="info-panel" class="glass hidden">
+  <div class="panel-head"><span>TELEMETRY / 当前目标参数</span><span class="ph-id">OBJ·DATA</span></div>
   <button id="info-close" title="关闭">✕</button>
   <div id="info-tag">—</div>
   <div id="info-name">—</div>
@@ -449,7 +489,7 @@ canvas{display:block}
 <!-- 【比例与素材说明】点顶栏 ⓘ 显示/隐藏 -->
 <div id="foot-note" class="glass">
   <span class="microlabel">Scale & Credits · 比例与来源</span>
-  <b>比例基准</b>：行星半径按立方根比例（相对大小接近真实）；轨道距离按幂律 36·a<sup>0.68</sup> 压缩；月球距离压缩至约 15 个地球半径（真实 60）；太阳半径未按比例（真实约需 65 单位）；GEO 卫星按真实 6.6 R<sub>⊕</sub>。日月地公转与自转均为真实周期；日食/月食阴影经视觉放大。奥尔特云示意半径 460–640（真实 2,000–100,000 AU）。银河模式：太阳距银心约 2.6 万光年、绕行速度约 230 km/s、周期约 2.3 亿年，尺寸为示意。行星贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0，SD/HD 分级加载），离线时自动回退程序化纹理。彗星与冥王星、谷神星轨道根数为近似值。
+  <b>比例基准</b>：行星半径按立方根比例（相对大小接近真实）；轨道距离按幂律 36·a<sup>0.68</sup> 压缩；月球距离压缩至约 15 个地球半径（真实 60）；太阳半径未按比例（真实约需 65 单位）；GEO 卫星按真实 6.6 R<sub>⊕</sub>。日月地公转与自转均为真实周期；日食/月食阴影经视觉放大；行星夜面加极弱环境反射（模拟黄道光/星光与长曝光，昼夜亮度比约 12:1）。<br><b>太阳物理</b>：光球 5778K 黄白色 + 临边昏暗 I(μ)=1−0.47(1−μ)−0.23(1−μ)² + Worley 对流胞元米粒 + 黑子；色球 Hα 656nm 薄层 + 针状体；日冕白光 K 冕（电子 Thomson 散射）+ 赤道 streamer / 极羽 / 冕洞，径向亮度按 Baumbach 幂律 r<sup>−6</sup>→r<sup>−2.5</sup>；真实日冕面亮度约光球百万分之一，此处为深空可读性压缩至约 5%，属视觉增强。<br>奥尔特云示意半径 460–640（真实 2,000–100,000 AU）。银河模式：太阳距银心约 2.6 万光年、约 230 km/s、周期约 2.3 亿年，尺寸示意。贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0），离线回退程序化。彗星/冥王星/谷神星轨道根数近似。
 </div>
 
 <!-- 【自由飞行提示】 -->
@@ -500,10 +540,12 @@ try {
 
 /* ---------------- 设置持久化与画质档位 ---------------- */
 const SAVE_KEY = 'solsys-v6-settings';
+/* 画质档：dpr 控制分辨率缩放（直接决定 Shader 片元开销）；
+   solarGran 控制米粒组织采样强度；后处理仅中高档启用。日冕为单 quad，开销恒定。 */
 const QUALITY = {
-  low:   { dpr: 1,   seg: 32, stars: 1400, belt: 600,  oort: 1200, aniso: 1, bloom: null },
-  mid:   { dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, bloom: { strength: .5, radius: .5, threshold: .85 } },
-  ultra: { dpr: 0,   seg: 72, stars: 5000, belt: 1800, oort: 3600, aniso: 8, bloom: { strength: .95, radius: .55, threshold: .82 } },
+  low:   { key:'low',   dpr: 1,   seg: 32, stars: 1400, belt: 600,  oort: 1200, aniso: 1, solarGran: 0.6, bloom: null },
+  mid:   { key:'mid',   dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, solarGran: 1.0, bloom: { strength: .42, radius: .5, threshold: .9 } },
+  ultra: { key:'ultra', dpr: 0,   seg: 72, stars: 5000, belt: 1800, oort: 3600, aniso: 8, solarGran: 1.0, bloom: { strength: .7,  radius: .55, threshold: .86 } },
 };
 // 迁移 v3-v5 旧设置：速度滑杆刻度已改为「实时→4000 天/秒」对数映射，换算旧速度到新刻度
 let saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -950,8 +992,14 @@ function moonLocalPos(days, out){
 /* ---------------- 太阳：着色器建模（学习 Solar Atlas 手法） ----------------
    表面：真实 sunmap 贴图 + 双层 fbm 米粒组织动画 + 临边昏暗；驱动 Bloom 发光
    色球层：菲涅尔边缘 + 针状体扰动；日冕：外层散射壳 */
+/* GLSL 噪声库：值噪声 / fbm / 细胞噪声（Worley）。
+   细胞噪声用于太阳米粒组织——真实米粒是对流胞元（暗边界+亮中心），不是云雾。 */
 const GLSL_NOISE3 = `
 float hash3(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453123); }
+vec3 hash33(vec3 p){
+  p = vec3(dot(p,vec3(127.1,311.7,74.7)), dot(p,vec3(269.5,183.3,246.1)), dot(p,vec3(113.5,271.9,124.6)));
+  return fract(sin(p) * 43758.5453);
+}
 float vnoise3(vec3 p){
   vec3 i = floor(p), f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
@@ -963,6 +1011,18 @@ float fbm3(vec3 p){
   float s = 0.0, amp = 0.5;
   for (int o = 0; o < 5; o++){ s += amp * vnoise3(p); amp *= 0.5; p *= 2.13; }
   return s;
+}
+// Worley：返回到最近特征点的距离；细胞边界处距离大 → 用来做米粒暗边
+float worley(vec3 p){
+  vec3 ip = floor(p), fp = fract(p);
+  float d1 = 8.0, d2 = 8.0;
+  for(int z=-1; z<=1; z++) for(int y=-1; y<=1; y++) for(int x=-1; x<=1; x++){
+    vec3 g = vec3(float(x),float(y),float(z));
+    vec3 o = hash33(ip + g);
+    float d = length(g + o - fp);
+    if(d < d1){ d2 = d1; d1 = d; } else if(d < d2){ d2 = d; }
+  }
+  return d2 - d1;  // 边界处≈0，胞心处大
 }`;
 const SUN_VERT = `
 varying vec2 vUv; varying vec3 vN; varying vec3 vPosW;
@@ -973,9 +1033,17 @@ void main(){
   vPosW = wp.xyz;
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
+/* ===== 太阳物理建模（严谨版）=====
+   光球 5778K：黄白色黑体连续谱 + 米粒对流胞元（Worley 暗边亮心）+ 黑子（~4000K）
+   + 临边昏暗 I(μ)/I(1)=1-u(1-μ)-v(1-μ)² (u=.47,v=.23 @550nm)
+   色球 ~2000km：Hα 粉红薄层 + 针状体细丝（极薄，非粗环）
+   日冕 1-3 MK：白光 K 冕（自由电子 Thomson 散射，光谱=光球→白色）
+   + F 冕黄白尘埃；赤道 streamer（闭合场羽毛）+ 极区 plume（开放场射线）+ 冕洞（暗区）
+   亮度径向陡降 r^-6→r^-2.5；无任何橘色径向 sprite 假光晕。 */
 const sunUniforms = {
   uTime: { value: 0 },
   uMap:  { value: sunFallbackTexture() },
+  uGran: { value: Q.solarGran },   // 米粒组织强度（画质档可调）
 };
 const sunGroup = new THREE.Group();
 const sunMesh = new THREE.Mesh(
@@ -984,23 +1052,33 @@ const sunMesh = new THREE.Mesh(
     uniforms: sunUniforms,
     vertexShader: SUN_VERT,
     fragmentShader: `
-      uniform float uTime; uniform sampler2D uMap;
+      uniform float uTime; uniform sampler2D uMap; uniform float uGran;
       varying vec2 vUv; varying vec3 vN; varying vec3 vPosW;
       ${GLSL_NOISE3}
       void main(){
-        vec3 base = texture2D(uMap, vUv).rgb;
-        // 米粒组织：两层不同速率流动的 fbm（粗颗粒 + 细颗粒）
-        float g1 = fbm3(vPosW * 1.5 + vec3(uTime * .05, 0.0, uTime * .03));
-        float g2 = fbm3(vPosW * 4.2 - vec3(0.0, uTime * .09, uTime * .06));
-        float gran = g1 * .62 + g2 * .38;
-        vec3 col = base * (0.70 + 0.58 * gran);
-        // 光斑亮区
-        col += vec3(1.0, .78, .42) * smoothstep(.72, .95, g2) * .38;
-        // 临边昏暗（真实太阳边缘更暗更红）
+        vec3 S = normalize(vPosW);                 // 球面方向（纹理空间稳定）
+        vec3 base = texture2D(uMap, vUv).rgb;      // NASA SDO/SOHO 太阳真实影像
+        // 米粒组织：Worley 对流胞元，暗边界亮中心；两层尺度（大 granule + 小 facula）
+        float cell = worley(S * 46.0 + vec3(uTime*0.018, uTime*0.012, 0.0));
+        float cell2 = worley(S * 96.0 - vec3(0.0, uTime*0.026, uTime*0.01));
+        float gran = smoothstep(0.06, 0.42, cell) * 0.7 + smoothstep(0.04, 0.35, cell2) * 0.3;
+        // 黑子：低频噪声阈值形成的低温暗区（~4000K），带本影/半影
+        float spotN = fbm3(S * 3.6 + vec3(0.0, uTime*0.004, 0.0));
+        float spot = smoothstep(0.70, 0.76, spotN) * (1.0 - smoothstep(0.80, 0.86, spotN));
+        // 光球基色：5778K 近似 #FFF4E6；NASA 贴图提供真实黑子/磁场纹理（须降权避免过曝）
+        vec3 col = mix(vec3(0.92,0.86,0.78), base * 0.72, 0.42);
+        // 米粒组织：暗胞边 + 亮胞心，强对比但色温保持黄白（过曝会冲掉纹理）
+        col *= (0.74 + 0.42 * gran * uGran);
+        // 黑子本影（~4000K，暗棕）/半影
+        col = mix(col, vec3(0.22,0.12,0.06), spot * 0.92);
+        // 临边昏暗 I(μ)/I(1)=1-u(1-μ)-v(1-μ)²，u=.47 v=.23 @550nm
         vec3 V = normalize(cameraPosition - vPosW);
         float mu = clamp(dot(normalize(vN), V), 0.0, 1.0);
-        col *= 0.42 + 0.58 * pow(mu, .62);
-        gl_FragColor = vec4(col * 1.5, 1.0);
+        float x = 1.0 - mu;
+        float limb = 1.0 - 0.47*x - 0.23*x*x;
+        col *= limb;
+        // 输出约 0.9 峰值：留给 Bloom 高光余量，避免整个圆盘被钳成纯白
+        gl_FragColor = vec4(col * 0.98, 1.0);
       }`
   })
 );
@@ -1010,10 +1088,11 @@ texLoader.load(TEX_BASE + 'sunmap.jpg', t => {
   sunUniforms.uMap.value = t;
 }, undefined, ()=>{});
 sunGroup.add(sunMesh);
-// 色球层：菲涅尔边缘光 + 针状体（spicules）噪声扰动
+
+// 色球：Hα 656nm 粉红，厚度仅约 2000km（≈0.003 R☉）→ 极薄边缘 + 针状体细丝
 const chromoUniforms = { uTime: { value: 0 } };
 const chromoMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(SUN_R * 1.035, Q.seg, Q.seg),
+  new THREE.SphereGeometry(SUN_R * 1.012, Q.seg, Q.seg),
   new THREE.ShaderMaterial({
     uniforms: chromoUniforms,
     transparent:true, blending: THREE.AdditiveBlending, depthWrite:false,
@@ -1023,49 +1102,83 @@ const chromoMesh = new THREE.Mesh(
       varying vec3 vN; varying vec3 vPosW;
       ${GLSL_NOISE3}
       void main(){
+        vec3 S = normalize(vPosW);
         vec3 N = normalize(vN);
         vec3 V = normalize(cameraPosition - vPosW);
-        float rim = pow(1.0 - abs(dot(N, V)), 2.6);
-        // 针状体：细密径向扰动，让边缘不是一条光滑的光
-        float spic = fbm3(normalize(vPosW) * 9.0 + vec3(0.0, uTime * .22, 0.0));
-        vec3 col = vec3(1.0, .40, .10) * rim * (0.8 + 0.6 * spic);
-        gl_FragColor = vec4(col * 1.25, rim);
+        float mu = abs(dot(N, V));
+        float rim = pow(1.0 - mu, 10.0);                 // 极薄，只在临边可见
+        float spic = fbm3(S * 22.0 + vec3(0.0, uTime * 0.12, 0.0));
+        float filaments = smoothstep(0.45, 0.8, spic);   // 针状体细丝
+        vec3 hAlpha = vec3(1.0, 0.34, 0.42);             // Hα 粉红
+        gl_FragColor = vec4(hAlpha * rim * (0.45 + 0.55*filaments), rim);
       }`
   })
 );
 sunGroup.add(chromoMesh);
-// 日冕：外层散射壳（内亮外暗、微噪声）
-const coronaUniforms = { uTime: { value: 0 } };
+
+/* 日冕：面向相机的圆盘 shader，逐片元积分视线上的 Thomson 散射电子密度。
+   物理依据：K 冕 = 自由电子散射光球连续谱（光谱同光球 → 白色）；
+   电子密度 n_e(r) ~ r^-6（内冕）→ r^-2.5（中冕，Baumbach 经验式）；
+   视线积分使边缘（impact parameter 小）显著增亮 → 日冕呈环状而非实心球；
+   磁结构调制：赤道 streamer（扁长羽毛）、极区 plume（细直射线）、冕洞（暗区）。
+   单个 quad 完成（替代多层球壳）：性能更优、形态可控、无假橘色光晕。 */
+const coronaUniforms = { uTime: { value: 0 }, uDensity: { value: 1 } };
+const coronaVert = `
+  varying vec2 vUv;
+  void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const coronaMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(SUN_R * 1.42, 48, 48),
+  new THREE.PlaneGeometry(SUN_R * 6.6, SUN_R * 6.6),
   new THREE.ShaderMaterial({
-    uniforms: coronaUniforms,
-    transparent:true, blending: THREE.AdditiveBlending, depthWrite:false, side: THREE.BackSide,
-    vertexShader: SUN_VERT,
+    uniforms: coronaUniforms, transparent:true,
+    blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false,
+    vertexShader: coronaVert,
     fragmentShader: `
-      uniform float uTime;
-      varying vec3 vN; varying vec3 vPosW;
+      uniform float uTime; uniform float uDensity;
+      varying vec2 vUv;
       ${GLSL_NOISE3}
       void main(){
-        vec3 N = normalize(vN);
-        vec3 V = normalize(cameraPosition - vPosW);
-        float rim = pow(1.0 - abs(dot(N, V)), 3.0);
-        float flow = fbm3(normalize(vPosW) * 3.5 + vec3(uTime * .03));
-        vec3 col = mix(vec3(1.0, .55, .22), vec3(1.0, .88, .66), rim) * rim * (0.75 + 0.35 * flow);
-        gl_FragColor = vec4(col * 0.9, rim * 0.85);
+        // 圆盘坐标：p = 相对太阳中心的屏幕偏移，单位=太阳半径（1.0 为光球边缘）
+        vec2 p = (vUv - 0.5) * 6.6;
+        float r = length(p);
+        if(r < 0.985 || r > 3.25) discard;              // 光球内部与过远处不画
+        float ang = atan(p.y, p.x);                      // 方位角
+        float h = p.y / r;                               // sin(纬度)
+        float lat = abs(h);
+        // Baumbach/K 冕径向亮度：内冕 r^-6 陡降，中冕 r^-2.5 缓降（真实观测拟合）
+        float inner = pow(r, -6.0);
+        float outer = 0.06 * pow(r, -2.5);
+        float radial = inner + outer;
+        // 边缘增亮：视线积分路径 ∝ 1/sqrt(1 - (R/r)^2) 的近似（r→1 时增强）
+        float limbBoost = 1.0 + 1.4 * exp(-(r - 1.0) * 4.0);
+        // 赤道 streamer：连续扁长羽毛（真实冕流是宽大扇形，非等间距尖刺）
+        float eqBelt = exp(-pow(lat / 0.26, 2.0));
+        float eqStr = fbm3(vec3(cos(ang)*5.0, sin(ang)*5.0, uTime*0.008));
+        // 冕流细丝：噪声调制的宽扇形（避免规则正弦尖刺）
+        float rays = pow(0.45 + 0.55*fbm3(vec3(cos(ang)*9.0, sin(ang)*9.0, uTime*0.01)), 2.0);
+        float streamer = eqBelt * (0.5 + 0.75*eqStr + 0.55*rays);
+        // 极羽：两极细直射线（开放场线），用不规则噪声打散周期性
+        float polar = smoothstep(0.80, 0.98, lat) * (0.25 + 0.85*pow(fbm3(vec3(cos(ang)*18.0, sin(ang)*18.0, uTime*0.006)), 1.6));
+        float structure = 0.22 + streamer * 0.9 + polar * 0.7;
+        // 冕洞：两极局地低密度（fast solar wind source）
+        float hole = smoothstep(0.85, 0.99, lat) * smoothstep(0.45, 0.72, fbm3(vec3(cos(ang)*3.0, sin(ang)*3.0, 7.0)));
+        structure *= 1.0 - 0.65 * hole;
+        // K 冕白（电子散射）；F 冕（尘埃，r>2.3R☉ 主导）暖白
+        float fMix = smoothstep(2.0, 3.2, r) * 0.45;
+        vec3 col = mix(vec3(1.0, 0.995, 0.985), vec3(1.0, 0.955, 0.88), fMix);
+        // 亮度映射：真实面亮度 ~1e-6 光球；此处按视觉可读压缩（ⓘ 标注为视觉增强）
+        float I = radial * limbBoost * structure * uDensity * 0.62;
+        I = pow(I, 0.72);                                 // 动态范围压缩：内冕亮、外冕柔和可见
+        I *= smoothstep(3.25, 2.2, r);                    // 外缘柔和淡出，避免硬裁剪
+        gl_FragColor = vec4(col * I, min(I, 0.92));
       }`
   })
 );
+coronaMesh.renderOrder = -1;   // 先画日冕，光球随后覆盖
 sunGroup.add(coronaMesh);
-const glow1 = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: glowTexture('rgba(255,244,214,1)', 'rgba(255,180,80,.55)'),
-  blending: THREE.AdditiveBlending, depthWrite:false, opacity:.6 }));
-glow1.scale.setScalar(SUN_R * 5.2);
-const glow2 = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: glowTexture('rgba(255,220,150,.7)', 'rgba(255,140,50,.25)'),
-  blending: THREE.AdditiveBlending, depthWrite:false, opacity:.28 }));
-glow2.scale.setScalar(SUN_R * 10);
-sunGroup.add(glow1, glow2);
+// billboard：始终面向相机（日冕是视线积分投影，不应随自转旋转）
+coronaMesh.onBeforeRender = function(renderer, scene, camera){
+  camera.getWorldQuaternion(this.quaternion);
+};
 scene.add(sunGroup);
 
 /* ---------------- 标签 ---------------- */
@@ -1131,9 +1244,18 @@ for (const b of BODIES){
       }));
     tilt.add(atmoMesh);
   } else {
+    // 行星材质：太阳光为主；夜面加极弱自发光贴图模拟黄道光/星光照明与相机长曝光
+    // （纯物理夜面全黑，但天文影像中夜面仍可见极暗细节；光照比 ~12:1 保留昼夜线）
+    const planetBaseTex = procTexFor(b);
     mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, Q.seg, Q.seg),
-      new THREE.MeshPhongMaterial({ map: procTexFor(b), shininess: b.key === 'venus' ? 4 : 6, specular: new THREE.Color(0x111111) }));
-    if (b.tex) loadTexInto(mesh.material, TEX_BASE + b.tex);
+      new THREE.MeshPhongMaterial({
+        map: planetBaseTex, emissive: new THREE.Color(0xffffff),
+        emissiveMap: planetBaseTex, emissiveIntensity: .075,
+        shininess: b.key === 'venus' ? 4 : 6, specular: new THREE.Color(0x111111),
+      }));
+    if (b.tex) loadTexInto(mesh.material, TEX_BASE + b.tex, {
+      apply: t => { mesh.material.map = t; mesh.material.emissiveMap = t; }
+    });
     if (b.bump) texLoader.load(TEX_BASE + b.bump, tb => { mesh.material.bumpMap = tb; mesh.material.bumpScale = .02; mesh.material.needsUpdate = true; }, undefined, ()=>{});
   }
   tilt.add(mesh);
@@ -2311,7 +2433,7 @@ function updateSolar(dt){
     inst.instanceMatrix.needsUpdate = true;
   }
   sunMesh.rotation.y = TAU * (simDays / rotFactor()) / 25.4;
-  glow1.scale.setScalar(SUN_R * 5.2 * (1 + Math.sin(performance.now() / 900) * .012));
+  chromoMesh.rotation.y = sunMesh.rotation.y;   // 色球随光球自转（针状体跟随磁场）
   updateEclipseVisuals();
 }
 
@@ -2409,7 +2531,20 @@ function animate(){
   if (composer){ renderPass.scene = activeScene; composer.render(); }
   else renderer.render(activeScene, camera);
   labelRenderer.render(activeScene, camera);
+  // 左下角遥测 HUD：FPS / 相机距离（以地球半径 R⊕=bodyR(1) 为基准）/ 模拟时间（J2000 起天数）
+  telFrames++;
+  telAcc += dt;
+  if (telAcc >= .25){
+    const fps = telFrames / telAcc;
+    $('tel-fps').textContent = fps.toFixed(0);
+    const camD = camera.position.distanceTo(controls.target);
+    $('tel-dist').textContent = (camD / bodyR(1)).toFixed(1);
+    $('tel-time').textContent = (simDays >= 0 ? '+' : '') + simDays.toFixed(1);
+    telFrames = 0; telAcc = 0;
+  }
 }
+
+let telFrames = 0, telAcc = 0;
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -2421,7 +2556,7 @@ addEventListener('resize', () => {
 
 /* ---------------- 启动（无加载屏，直接进入场景） ---------------- */
 /* 调试/演示钩子（不影响运行）：控制台或自动化脚本可用 */
-window.__sim = { setDays: d => { simDays = d; }, camera, cometRuntime,
+window.__sim = { setDays: d => { simDays = d; }, camera, cometRuntime, planets,
   goto: (x,y,z,t=0) => { camera.position.set(x,y,z); controls.target.set(t[0] ?? 0, t[1] ?? 0, t[2] ?? 0); },
   setTgt: (x,y,z) => controls.target.set(x,y,z) };
 animate();
