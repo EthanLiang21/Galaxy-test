@@ -489,7 +489,7 @@ canvas{display:block}
 <!-- 【比例与素材说明】点顶栏 ⓘ 显示/隐藏 -->
 <div id="foot-note" class="glass">
   <span class="microlabel">Scale & Credits · 比例与来源</span>
-  <b>比例基准（统一压缩，物理自洽）</b>：所有长度——天体半径、轨道、月球与卫星距离——共用同一函数 f(x)=0.4·x<sup>0.55</sup>（x 以地球半径 R<sub>⊕</sub> 为单位）。因此任意两个长度的<b>显示比 = 真实比<sup>0.55</sup></b>，大小顺序与包含关系严格保真（月球轨道始终在金星与地球之间、GEO 始终在月球轨道内、太阳始终远大于行星），彻底消除了旧版「地月轨道穿越金星火星」的错误。真实值：太阳 109.2 R<sub>⊕</sub>（显示 5.29）、月球轨道 60.3 R<sub>⊕</sub>（显示 3.81）、GEO 6.6 R<sub>⊕</sub>（显示 1.13）、地球轨道 23,481 R<sub>⊕</sub>（显示 101.4）、海王星 705,900 R<sub>⊕</sub>（显示 659）。指数 0.55 是为了让内行星与外行星同屏可读；若要绝对线性比例，海王星轨道将达 9,400 单位而无法观察。日月地公转与自转均为真实周期与真实轨道根数（偏心率/倾角/升交点/近日点）；日食/月食阴影经视觉放大；行星夜面加极弱环境反射（昼夜亮度比约 12:1）。<br><b>太阳物理</b>：光球 5778K 黄白色 + 临边昏暗 I(μ)=1−0.47(1−μ)−0.23(1−μ)² + Worley 对流胞元米粒 + 黑子；色球 Hα 656nm 薄层 + 针状体；日冕白光 K 冕（电子 Thomson 散射）+ 赤道 streamer / 极羽 / 冕洞，径向亮度按 Baumbach 幂律 r<sup>−6</sup>→r<sup>−2.5</sup>；真实日冕面亮度约光球百万分之一，此处为深空可读性压缩至约 5%，属视觉增强。<br>奥尔特云示意半径 460–640（真实 2,000–100,000 AU）。银河模式：太阳距银心约 2.6 万光年、约 230 km/s、周期约 2.3 亿年，尺寸示意。贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0），离线回退程序化。彗星/冥王星/谷神星轨道根数近似。
+  <b>比例基准（分类压缩，物理自洽）</b>：距离类（行星轨道、月球、卫星）共用 f<sub>d</sub>(x)=0.4·x<sup>0.55</sup>，半径类（天体大小）用 f<sub>b</sub>(x)=0.4·x<sup>0.78</sup>（x 均以地球半径 R<sub>⊕</sub> 为单位）。同类内部的显示比 = 真实比<sup>指数</sup>，包含关系严格保真：月球轨道始终在金星与地球之间、GEO 在月球内、太阳大于所有行星——彻底消除旧版「地月轨道穿越金星火星」的错误。半径用更弱压缩(0.78)是为了让太阳真正像恒星：太阳/木星显示比 6.0（真实 10；旧版仅 3.5）。真实值：太阳 109.2 R<sub>⊕</sub>（显示 15.6）、木星 10.97 R<sub>⊕</sub>（显示 2.59）、地球 0.4、月球轨道 60.3 R<sub>⊕</sub>（显示 3.81）、GEO 6.6 R<sub>⊕</sub>（显示 1.13）、地球轨道 23,481 R<sub>⊕</sub>（显示 101.4）、海王星 705,900 R<sub>⊕</sub>（显示 659）。若完全线性，太阳将达 43.7 单位、海王星轨道 9,400 单位而无法同屏。日月地公转/自转周期与轨道根数（偏心率/倾角/升交点/近日点）均为真实；日食/月食阴影经视觉放大；行星夜面加极弱环境反射（昼夜亮度比约 12:1）。<br><b>太阳物理</b>：光球 5778K 黄白色 + 临边昏暗 I(μ)=1−0.47(1−μ)−0.23(1−μ)² + Worley 对流胞元米粒 + 黑子；色球 Hα 656nm 薄层 + 针状体；日冕白光 K 冕（电子 Thomson 散射）+ 赤道 streamer / 极羽 / 冕洞，径向亮度按 Baumbach 幂律 r<sup>−6</sup>→r<sup>−2.5</sup>；真实日冕面亮度约光球百万分之一，此处为深空可读性压缩至约 5%，属视觉增强。<br>奥尔特云示意半径 460–640（真实 2,000–100,000 AU）。银河模式：太阳距银心约 2.6 万光年、约 230 km/s、周期约 2.3 亿年，尺寸示意。贴图来自 NASA/JPL，银河背景 © ESO/S. Brunier（eso0932a，CC BY 4.0），离线回退程序化。彗星/冥王星/谷神星轨道根数近似。
 </div>
 
 <!-- 【自由飞行提示】 -->
@@ -543,9 +543,9 @@ const SAVE_KEY = 'solsys-v6-settings';
 /* 画质档：dpr 控制分辨率缩放（直接决定 Shader 片元开销）；
    solarGran 控制米粒组织采样强度；后处理仅中高档启用。日冕为单 quad，开销恒定。 */
 const QUALITY = {
-  low:   { key:'low',   dpr: 1,   seg: 32, stars: 1400, belt: 600,  oort: 1200, aniso: 1, solarGran: 0.6, bloom: { strength: .28, radius: .35, threshold: 1.0 } },
-  mid:   { key:'mid',   dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, solarGran: 1.0, bloom: { strength: .4,  radius: .45, threshold: .96 } },
-  ultra: { key:'ultra', dpr: 0,   seg: 72, stars: 5000, belt: 1800, oort: 3600, aniso: 8, solarGran: 1.0, bloom: { strength: .55, radius: .5,  threshold: .92 } },
+  low:   { key:'low',   dpr: 1,   seg: 32, stars: 1400, belt: 600,  oort: 1200, aniso: 1, solarGran: 0.6, bloom: { strength: .38, radius: .4,  threshold: 1.3 } },
+  mid:   { key:'mid',   dpr: 1.5, seg: 48, stars: 2600, belt: 1100, oort: 2200, aniso: 4, solarGran: 1.0, bloom: { strength: .55, radius: .5,  threshold: 1.25 } },
+  ultra: { key:'ultra', dpr: 0,   seg: 72, stars: 5000, belt: 1800, oort: 3600, aniso: 8, solarGran: 1.0, bloom: { strength: .72, radius: .56, threshold: 1.2 } },
 };
 // 迁移 v3-v5 旧设置：速度滑杆刻度已改为「实时→4000 天/秒」对数映射，换算旧速度到新刻度
 let saved = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
@@ -585,23 +585,28 @@ const MILKY_URL_SD  = 'https://cdn.eso.org/images/screen/eso0932a.jpg';  // ESO/
 const MILKY_URL_HD  = 'https://cdn.eso.org/images/large/eso0932a.jpg';
 const MILKY_URL_ALT = 'https://cdn.jsdelivr.net/gh/vasturiano/three-globe@master/example/img/night-sky.png';
 
-/* ============ 全局比例系统：单一幂律压缩，物理自洽 ============
-   旧系统把半径/轨道/月球距离分别用三种不同函数压缩，导致：
-   月球绕地一圈（9 单位）会穿越金星(28.9)与火星(47.9)轨道——拓扑完全错误。
-   新系统对「所有长度」使用同一个压缩函数 f(x)=R⊕·x^P（x 以地球半径为单位），
-   因此任意两个真实长度的显示比 = 真实比的 P 次幂，大小顺序与包含关系严格保真：
-   月球轨道永远在金星与地球之间，GEO 永远在月球轨道内，太阳永远大于任何行星。
-   P=0.55：太阳显示半径 5.29（真实 109.2 R⊕），地球轨道 101（真实 23481 R⊕）。
-   真实比值与压缩后比值在 ⓘ 说明浮层中逐项公开。 */
+/* ============ 全局比例系统：轨道拓扑 + 恒星存在感双目标 ============
+   旧系统三种函数各自压缩 → 月球轨道穿越金星火星，拓扑崩坏。
+   现行方案分两类长度，各用单一幂律（同类内部比值保真）：
+   · 轨道/距离（行星轨道、月球轨道、卫星轨道）：f_dist(x)=R⊕·x^0.55
+     → 月球轨道严格在金星与地球之间，GEO 在月球内，拓扑正确。
+   · 天体半径：f_body(x)=R⊕·x^0.78（比轨道压缩更弱 → 放大天空洞的大小差）
+     → 太阳/木星 = 6.0（真实 10，旧系统仅 3.5），太阳显示半径 15.6，
+       像一颗真正的恒星；太阳仍远小于水星轨道(60)，不吞没行星。
+   若所有半径完全线性（指数 1.0），太阳将达 43.7 单位、逼近水星轨道，
+   且海王星轨道需 9400 单位才能同屏——故 0.78 是物理与可读的平衡。
+   真实比值与压缩后比值在 ⓘ 说明浮层逐项公开。 */
 const AU_IN_RE  = 23481;                 // 1 AU = 149,597,870 km ÷ 6,371 km
-const SCALE_P   = 0.55;                  // 统一压缩指数（所有长度共用）
+const DIST_P    = 0.55;                  // 距离压缩指数（轨道/月球/卫星）
+const BODY_Q    = 0.78;                  // 半径压缩指数（天体，弱压缩→太阳更突出）
 const R_EARTH   = 0.4;                   // 地球显示半径（单位）
-const fScale    = xRE => R_EARTH * Math.pow(xRE, SCALE_P);
-const bodyR     = rE  => fScale(rE);     // 天体半径（rE = 地球半径倍数）
-const orbitR    = aAU => fScale(AU_IN_RE * aAU);  // 轨道半径（aAU = 天文单位）
-const SUN_R     = bodyR(109.2);          // 696,000 km ÷ 6,371 km = 109.2 R⊕
-const MOON_DIST = bodyR(60.3);           // 384,400 km ÷ 6,371 km = 60.3 R⊕（真实值）
-const GEO_DIST  = bodyR(6.6);            // 42,164 km ÷ 6,371 km = 6.6 R⊕（真实值）
+const fDist     = xRE => R_EARTH * Math.pow(xRE, DIST_P);
+const fBody     = xRE => R_EARTH * Math.pow(xRE, BODY_Q);
+const bodyR     = rE  => fBody(rE);      // 天体半径
+const orbitR    = aAU => fDist(AU_IN_RE * aAU);  // 行星轨道半径（aAU = 天文单位）
+const SUN_R     = bodyR(109.2);          // 696,000 km ÷ 6,371 km = 109.2 R⊕ → 15.6
+const MOON_DIST = fDist(60.3);           // 384,400 km ÷ 6,371 km = 60.3 R⊕ → 3.81
+const GEO_DIST  = fDist(6.6);            // 42,164 km ÷ 6,371 km = 6.6 R⊕ → 1.13
 const MOON_INC  = 5.145;
 // 日食/月食检测阈值（视觉放大后的阴影角度）
 const SOLAR_T = 3.0 * DEG;
@@ -649,9 +654,9 @@ camera.position.set(280, 400, 640);   // 全景：覆盖海王星 659 与冥王�
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Q.dpr === 0 ? Math.min(devicePixelRatio, 2.5) : Q.dpr);
-// Reinhard 色调映射：比 ACES 更保色，避免把太阳的 5778K 暖金白去饱和成灰白
+// Reinhard 色调映射：比 ACES 更保色；曝光压低让暖金色停留在线性区不被推白
 renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.35;
+renderer.toneMappingExposure = 1.0;
 stage.appendChild(renderer.domElement);
 
 const labelRenderer = new CSS2DRenderer({ element: document.getElementById('labels-root') });
@@ -1078,7 +1083,7 @@ const sunMesh = new THREE.Mesh(
         float spot = max(texSpot * 0.85, noiseSpot * 0.7);
         // 光球色温：5778K 炽热黄白（真实太空影像呈暖金白，非灰白）；贴图只取磁场纹理不取亮度
         float texLum = dot(base, vec3(0.299, 0.587, 0.114));
-        vec3 col = vec3(1.0, 0.80, 0.52) * (0.88 + 0.20 * texLum);
+        vec3 col = vec3(1.0, 0.76, 0.44) * (0.90 + 0.18 * texLum);
         col *= (0.94 + 0.16 * gran * uGran);       // 米粒柔和起伏（发光的等离子体，不是固体颗粒）
         col = mix(col, vec3(0.32, 0.14, 0.05), spot * 0.9);
         // 临边昏暗 I(μ)/I(1)=1-u(1-μ)-v(1-μ)²，u=.47 v=.23 @550nm
@@ -1089,9 +1094,9 @@ const sunMesh = new THREE.Mesh(
         col *= limb;
         // 临边色温红移：边缘更橙红（真实：短波临边昏暗更强）
         col *= mix(vec3(1.0), vec3(1.0, 0.86, 0.68), x*x*0.7);
-        // 光球亮度控制在 Bloom 阈值以下，保留米粒/黑子细节；
-        // 发光感由专门的辉光层（glow shell）承担——电影渲染的辉光/主体分离手法
-        gl_FragColor = vec4(col * 0.98, 1.0);
+        // HDR 光球：亮度 2.5（超过 Bloom 阈值 1.25）→ 核心炽白、边缘暖金，
+        // 经 Reinhard 映射后仍保留亮度层次；辉光层叠加暖金 PSF 翼，形成发光恒星观感
+        gl_FragColor = vec4(col * 2.5, 1.0);
       }`
   })
 );
@@ -1179,8 +1184,8 @@ const coronaMesh = new THREE.Mesh(
         float fMix = smoothstep(2.0, 3.2, r) * 0.45;
         vec3 col = mix(vec3(1.0, 0.995, 0.985), vec3(1.0, 0.955, 0.88), fMix);
         // 亮度映射：真实面亮度 ~1e-6 光球；此处按视觉可读压缩（ⓘ 标注为视觉增强）
-        float I = radial * limbBoost * structure * uDensity * 0.52;
-        I = pow(I, 0.75);                                 // 动态范围压缩：内冕亮、外冕柔和可见
+        float I = radial * limbBoost * structure * uDensity * 0.62;
+        I = pow(I, 0.73);                                 // 动态范围压缩：内冕亮、外冕柔和可见
         I *= smoothstep(3.25, 2.2, r);                    // 外缘柔和淡出，避免硬裁剪
         I = min(I, 0.9);                                  // 封顶略低于 Bloom 阈值
         gl_FragColor = vec4(col * I, I);
@@ -1195,10 +1200,11 @@ coronaMesh.onBeforeRender = function(renderer, scene, camera){
 };
 
 /* 恒星光晕层：模拟相机/人眼对强光源的 PSF 散射翼（不是假橘色 sprite）。
-   紧贴光球（1.0→1.6 R☉）、暖金白、指数衰减；峰值受控不淹没表面细节。
-   放在光球之后叠加（renderOrder=2），用 Additive 混合让边缘自然外溢。 */
+   三层结构：紧贴光球的炽白内缘 + 暖金主晕 + 大尺度柔光翼（模拟镜头散射）。
+   放在光球之后叠加（renderOrder=2），Additive 混合让边缘自然外溢；
+   峰值受控在 Bloom 阈值以下，不淹没米粒/黑子细节。 */
 const haloShell = new THREE.Mesh(
-  new THREE.PlaneGeometry(SUN_R * 3.0, SUN_R * 3.0),
+  new THREE.PlaneGeometry(SUN_R * 5.2, SUN_R * 5.2),
   new THREE.ShaderMaterial({
     uniforms: { uTime: coronaUniforms.uTime },
     transparent:true, blending: THREE.AdditiveBlending, depthWrite:false, depthTest:false,
@@ -1206,14 +1212,20 @@ const haloShell = new THREE.Mesh(
     fragmentShader: `
       uniform float uTime; varying vec2 vUv;
       void main(){
-        vec2 p = (vUv - 0.5) * 3.0;
+        vec2 p = (vUv - 0.5) * 5.2;
         float r = length(p);
-        if(r < 0.97 || r > 1.5) discard;             // 只覆盖 1.0–1.5 R☉，把外层留给日冕
-        float inner = 0.52 * exp(-(r - 1.0) * 16.0); // 紧贴光球的亮金边
-        float outer = 0.06 * pow(r, -4.0);
-        float glow = (inner + outer) * smoothstep(1.5, 1.15, r);
-        vec3 warmGold = vec3(1.0, 0.76, 0.42);       // 暖金色（5778K 恒星光晕）
-        gl_FragColor = vec4(warmGold * glow, glow);
+        if(r < 0.97 || r > 2.6) discard;              // 1.0–2.6 R☉，覆盖内冕并向外柔和过渡
+        // ① 炽白内缘：极窄（只在光球边界 1.0–1.08 R☉），柔和淡入避免硬边
+        float edgeFade = smoothstep(0.97, 1.01, r);    // 从 0 平滑升到 1，消除硬圆环
+        float inner = 0.48 * exp(-(r - 1.0) * 28.0);
+        // ② 暖金主晕：中距离主导辉光（幂律衰减）
+        float mainGlow = 0.42 * pow(r, -3.4);
+        // ③ 柔光翼：大尺度极低亮度散射
+        float wing = 0.10 * pow(r, -1.9);
+        float glow = (inner + mainGlow + wing) * smoothstep(2.6, 1.6, r) * edgeFade;
+        // Additive 下控制总量不过饱和：强暖金（G/B 显著低于 R）
+        vec3 color = vec3(1.0, 0.72, 0.36);
+        gl_FragColor = vec4(color * glow, glow);
       }`
   })
 );
@@ -1600,11 +1612,11 @@ function buildGEO(){
   g.add(nozzle);
   return g;
 }
-// 卫星轨道：全部走统一压缩函数 fScale，真实比值 1.1 / 6.6 R⊕（LEO / GEO）
+// 卫星轨道：距离类压缩 fDist，真实比值 1.1 / 6.6 R⊕（LEO / GEO）
 const SATS = [
-  { key:'iss',     info: SAT_INFO.iss,     r: fScale(1.10), inc: 51.6, periodMin: 92.7, geo:false, build: buildISS },
-  { key:'css',     info: SAT_INFO.css,     r: fScale(1.09), inc: 41.5, periodMin: 92.0, geo:false, build: buildCSS },
-  { key:'hst',     info: SAT_INFO.hst,     r: fScale(1.14), inc: 28.5, periodMin: 95.5, geo:false, build: buildHST },
+  { key:'iss',     info: SAT_INFO.iss,     r: fDist(1.10), inc: 51.6, periodMin: 92.7, geo:false, build: buildISS },
+  { key:'css',     info: SAT_INFO.css,     r: fDist(1.09), inc: 41.5, periodMin: 92.0, geo:false, build: buildCSS },
+  { key:'hst',     info: SAT_INFO.hst,     r: fDist(1.14), inc: 28.5, periodMin: 95.5, geo:false, build: buildHST },
   { key:'beidou',  info: SAT_INFO.beidou,  r: GEO_DIST,      inc: 0,    periodMin: null, geo:true,  build: buildGEO },
 ];
 const earthObj = planets.find(p => p.body.key === 'earth');
@@ -1816,15 +1828,20 @@ texLoader.load(MILKY_URL_SD, t => {
 }, undefined, () => texLoader.load(MILKY_URL_ALT, t => { t.colorSpace = THREE.SRGBColorSpace; applyMilky(t); }, undefined, ()=>{}));
 let skyMat = null, galSkyMat = null;
 
-function buildSky(targetScene, matRef){
-  const mat = new THREE.MeshBasicMaterial({ map: milkyTexture, side: THREE.BackSide, depthWrite:false });
+function buildSky(targetScene, dimFactor){
+  // 太阳系模式大幅压暗银河背景（真实：从太阳系内看银河只是一条暗淡光带，
+  // 深空接近纯黑），让太阳的暖金辉光得以显现；银河模式保留原始亮度。
+  const mat = new THREE.MeshBasicMaterial({
+    map: milkyTexture, side: THREE.BackSide, depthWrite:false,
+    color: new THREE.Color(dimFactor, dimFactor, dimFactor * 1.04),
+  });
   const sky = new THREE.Mesh(new THREE.SphereGeometry(2600, 48, 32), mat);
   sky.rotation.y = 2.2;   // 银河带方位摆一摆，避免与黄道完全同向
   targetScene.add(sky);
   return mat;
 }
-skyMat = buildSky(scene);
-galSkyMat = buildSky(galaxyScene);
+skyMat = buildSky(scene, 0.20);       // 太阳系：深空暗背景
+galSkyMat = buildSky(galaxyScene, 1.0); // 银河模式：原始亮度
 
 function buildStars(targetScene, N, size){
   const pos = new Float32Array(N * 3), col = new Float32Array(N * 3);
@@ -2441,8 +2458,8 @@ function updateSolar(dt){
   for (const c of cometRuntime){
     keplerScenePos(c.elems, simDays, tmpV);
     c.sys.position.copy(tmpV);
-    // 统一压缩函数的逆运算：r = R⊕·(AU·x)^P  →  x = (r/R⊕)^(1/P)/AU
-    const rAU = Math.pow(tmpV.length() / R_EARTH, 1 / SCALE_P) / AU_IN_RE;
+    // 距离压缩的逆运算：r = R⊕·(AU·x)^DIST_P  →  x = (r/R⊕)^(1/DIST_P)/AU
+    const rAU = Math.pow(tmpV.length() / R_EARTH, 1 / DIST_P) / AU_IN_RE;
     const act = Math.min(1, Math.pow(2.6 / rAU, 1.6));
     c.coma.material.opacity = .12 + .68 * act;
     c.coma.scale.setScalar(c.comaBase * (0.5 + 1.3 * act));
